@@ -97,6 +97,24 @@ export default function CadastroPage() {
           </Button>
         </form>
 
+        <p className="mt-4 text-[11px] text-center text-ink-500 dark:text-paper-300/70 leading-relaxed">
+          Ao continuar, você concorda com nossos{" "}
+          <Link
+            href="/termos-de-uso"
+            className="underline hover:text-ink-900 dark:hover:text-paper-50 transition"
+          >
+            Termos de Uso
+          </Link>{" "}
+          e nossa{" "}
+          <Link
+            href="/politica-de-privacidade"
+            className="underline hover:text-ink-900 dark:hover:text-paper-50 transition"
+          >
+            Política de Privacidade
+          </Link>
+          .
+        </p>
+
         <div className="mt-6 pt-6 border-t border-line dark:border-ink-line text-center">
           <p className="text-sm text-ink-700 dark:text-paper-200">
             Já tem uma conta?{" "}

@@ -131,7 +131,22 @@ export default function HomePage() {
         <AdSenseBanner className="py-2" />
 
         {/* Rodapé */}
-        <footer className="py-6 border-t border-line dark:border-ink-line text-center">
+        <footer className="py-8 border-t border-line dark:border-ink-line text-center space-y-3">
+          <div className="flex justify-center items-center gap-4 text-xs font-sans text-ink-600 dark:text-paper-300">
+            <Link
+              href="/termos-de-uso"
+              className="hover:text-ink-900 dark:hover:text-paper-50 transition underline underline-offset-2"
+            >
+              Termos de Uso
+            </Link>
+            <span className="text-ink-300 dark:text-ink-line">·</span>
+            <Link
+              href="/politica-de-privacidade"
+              className="hover:text-ink-900 dark:hover:text-paper-50 transition underline underline-offset-2"
+            >
+              Política de Privacidade
+            </Link>
+          </div>
           <p className="text-xs text-ink-500 dark:text-paper-200/60 font-sans">
             Boralê — Plataforma de leitura conjunta · Design System Papel Pólen & Tinta Impressa
           </p>
