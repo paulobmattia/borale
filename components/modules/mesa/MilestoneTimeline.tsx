@@ -36,18 +36,24 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
 
       <div className="space-y-2">
         {milestones.map((m, index) => {
+          const cardStyle = m.isCurrent
+            ? "border-l-4 border-l-amber-400 bg-amber-50/50 dark:bg-amber-950/25 border-amber-200/60 dark:border-amber-900/40 shadow-xs"
+            : m.isCompleted
+            ? "border-l-4 border-l-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40"
+            : "border-l-4 border-l-sky-400/70 bg-paper-100 dark:bg-ink-surface border-line dark:border-ink-line";
+
           return (
             <div
               key={m.id}
-              className="p-3.5 rounded-lg border border-line bg-paper-100 dark:bg-ink-surface dark:border-ink-line text-xs space-y-2.5 transition-colors"
+              className={`p-3.5 rounded-lg border text-xs space-y-2.5 transition-colors ${cardStyle}`}
             >
               <div className="flex items-start justify-between gap-2.5">
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   <div className="flex-shrink-0 mt-0.5">
                     {m.isCompleted ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     ) : m.isCurrent ? (
-                      <Clock className="w-4 h-4 text-brand-700 dark:text-brand-300 animate-pulse" />
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 animate-pulse" />
                     ) : (
                       <span className="w-4 h-4 rounded-full border border-line dark:border-ink-line flex items-center justify-center text-[10px] text-ink-500 font-sans">
                         {index + 1}
@@ -60,7 +66,7 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
                       {m.title || `Meta ${index + 1}`}
                     </h4>
                     {(m.target_chapter || m.target_page) && (
-                      <p className="text-[11px] text-ink-500 dark:text-paper-300 mt-0.5">
+                      <p className="text-[11px] text-ink-600 dark:text-paper-300 mt-0.5">
                         {m.target_chapter ? `Capítulo ${m.target_chapter}` : ""}
                         {m.target_chapter && m.target_page ? " · " : ""}
                         {m.target_page ? `Até Pág. ${m.target_page}` : ""}
@@ -70,14 +76,14 @@ export function MilestoneTimeline({ milestones }: MilestoneTimelineProps) {
                 </div>
 
                 {m.isCurrent && (
-                  <Badge variant="brand" className="text-[10px]">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-amber-200/90 text-amber-950 border border-amber-300 dark:bg-amber-900/60 dark:text-amber-100 dark:border-amber-700 shadow-xs">
                     Em curso
-                  </Badge>
+                  </span>
                 )}
                 {m.isCompleted && (
-                  <Badge variant="success" className="text-[10px]">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-emerald-100 text-emerald-950 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-100 dark:border-emerald-700 shadow-xs">
                     Concluído
-                  </Badge>
+                  </span>
                 )}
               </div>
 

@@ -14,11 +14,13 @@ export interface EditProfileModalProps {
   onClose: () => void;
   initialDisplayName?: string;
   initialBio?: string;
+  initialFavoriteBook?: string | null;
   initialAvatarUrl?: string;
   initialGenres?: string[];
   onProfileUpdated?: (data: {
     displayName: string;
     bio: string;
+    favoriteBook?: string | null;
     avatarUrl?: string;
     favoriteGenres: string[];
   }) => void;
@@ -29,12 +31,16 @@ export function EditProfileModal({
   onClose,
   initialDisplayName = "",
   initialBio = "",
+  initialFavoriteBook = "",
   initialAvatarUrl = "",
   initialGenres = [],
   onProfileUpdated,
 }: EditProfileModalProps) {
   const [displayName, setDisplayName] = React.useState(initialDisplayName);
   const [bio, setBio] = React.useState(initialBio);
+  const [favoriteBook, setFavoriteBook] = React.useState(
+    initialFavoriteBook || ""
+  );
   const [avatarUrl, setAvatarUrl] = React.useState(initialAvatarUrl);
   const [genres, setGenres] = React.useState<string[]>(initialGenres);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -43,9 +49,16 @@ export function EditProfileModal({
   React.useEffect(() => {
     setDisplayName(initialDisplayName);
     setBio(initialBio);
+    setFavoriteBook(initialFavoriteBook || "");
     setAvatarUrl(initialAvatarUrl);
     setGenres(initialGenres);
-  }, [initialDisplayName, initialBio, initialAvatarUrl, initialGenres]);
+  }, [
+    initialDisplayName,
+    initialBio,
+    initialFavoriteBook,
+    initialAvatarUrl,
+    initialGenres,
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +73,7 @@ export function EditProfileModal({
       await updateProfile({
         displayName: displayName.trim(),
         bio: bio.trim(),
+        favoriteBook: favoriteBook.trim() || undefined,
         avatarUrl: avatarUrl || undefined,
         favoriteGenres: genres,
       });
@@ -67,6 +81,7 @@ export function EditProfileModal({
       onProfileUpdated?.({
         displayName: displayName.trim(),
         bio: bio.trim(),
+        favoriteBook: favoriteBook.trim() || null,
         avatarUrl,
         favoriteGenres: genres,
       });
@@ -108,6 +123,15 @@ export function EditProfileModal({
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Ex: Clarice Lispector"
+        />
+
+        <Input
+          id="profile-favorite-book"
+          label="Obra Favorita da Vida"
+          value={favoriteBook}
+          onChange={(e) => setFavoriteBook(e.target.value)}
+          placeholder="Ex: Cem Anos de Solidão — Gabriel García Márquez"
+          hint="Escreva por extenso o livro que mais te marcou. Ele aparecerá no seu perfil para gerar identificação com leitores afins."
         />
 
         <Textarea

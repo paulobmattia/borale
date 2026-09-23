@@ -28,6 +28,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           ? {
               display_name: profileData.profile.display_name,
               bio: profileData.profile.bio,
+              favorite_book: profileData.profile.favorite_book,
               avatar_url: profileData.profile.avatar_url,
               favorite_genres: profileData.profile.favorite_genres,
             }

@@ -26,6 +26,7 @@ export interface Database {
           display_name: string;
           avatar_url: string | null;
           bio: string | null;
+          favorite_book: string | null;
           favorite_genres: string[];
           created_at: string;
         };
@@ -35,6 +36,7 @@ export interface Database {
           display_name: string;
           avatar_url?: string | null;
           bio?: string | null;
+          favorite_book?: string | null;
           favorite_genres?: string[];
           created_at?: string;
         };
@@ -44,6 +46,7 @@ export interface Database {
           display_name?: string;
           avatar_url?: string | null;
           bio?: string | null;
+          favorite_book?: string | null;
           favorite_genres?: string[];
           created_at?: string;
         };

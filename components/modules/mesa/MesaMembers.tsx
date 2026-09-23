@@ -46,9 +46,9 @@ export function MesaMembers({ members }: MesaMembersProps) {
                     {member.display_name}
                   </span>
                   {member.role === "admin" && (
-                    <Badge variant="brand" className="text-[10px] px-1 py-0 gap-0.5">
-                      <Crown className="w-2.5 h-2.5" /> Admin
-                    </Badge>
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium font-sans px-1.5 py-0 rounded bg-amber-200/80 text-amber-950 border border-amber-300 dark:bg-amber-900/60 dark:text-amber-200 dark:border-amber-700">
+                      <Crown className="w-2.5 h-2.5 text-amber-700 dark:text-amber-400" /> Admin
+                    </span>
                   )}
                 </div>
                 <span className="text-xs text-ink-500 dark:text-paper-200/60 block">
@@ -59,8 +59,8 @@ export function MesaMembers({ members }: MesaMembersProps) {
 
             <div className="text-right flex-shrink-0">
               {member.current_page != null && (
-                <div className="inline-flex items-center gap-1 text-xs font-medium text-ink-700 dark:text-paper-200 bg-paper-200/60 dark:bg-ink-surface-2 px-2 py-0.5 rounded border border-line dark:border-ink-line">
-                  <BookOpen className="w-3 h-3 text-brand-700 dark:text-brand-300" />
+                <div className="inline-flex items-center gap-1 text-xs font-medium text-amber-950 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-300/70 dark:border-amber-800/60 shadow-2xs">
+                  <BookOpen className="w-3 h-3 text-amber-700 dark:text-amber-400" />
                   <span>
                     {member.current_chapter ? `Cap. ${member.current_chapter} · ` : ""}
                     Pág. {member.current_page}

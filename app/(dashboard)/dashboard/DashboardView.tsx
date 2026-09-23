@@ -92,7 +92,7 @@ export function DashboardView({
           >
             <Library className="w-4 h-4" />
             Minhas Mesas
-            <span className="text-xs px-2 py-0.5 rounded-full bg-paper-200 dark:bg-ink-surface text-ink-700 dark:text-paper-200 border border-line dark:border-ink-line">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700 font-semibold shadow-2xs">
               {myMesas.length}
             </span>
           </button>
@@ -108,7 +108,7 @@ export function DashboardView({
           >
             <Compass className="w-4 h-4" />
             Explorar Mesas Abertas
-            <span className="text-xs px-2 py-0.5 rounded-full bg-paper-200 dark:bg-ink-surface text-ink-700 dark:text-paper-200 border border-line dark:border-ink-line">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-sky-100 text-sky-900 border border-sky-300 dark:bg-sky-950/60 dark:text-sky-200 dark:border-sky-700 font-semibold shadow-2xs">
               {publicMesas.length}
             </span>
           </button>
@@ -184,9 +184,9 @@ export function DashboardView({
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <Badge variant="brand" className="text-[10px] mb-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-900/60 dark:text-amber-100 dark:border-amber-700 shadow-2xs mb-1">
                               {mesa.title}
-                            </Badge>
+                            </span>
                             <h3 className="font-display text-h3 text-ink-900 dark:text-paper-50 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition">
                               {mesa.book_title}
                             </h3>
@@ -200,8 +200,8 @@ export function DashboardView({
                                 {mesa.members_count} leitores
                               </span>
                               {mesa.target_milestone && (
-                                <span className="inline-flex items-center gap-1">
-                                  <Clock className="w-3.5 h-3.5" />{" "}
+                                <span className="inline-flex items-center gap-1 text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                                  <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />{" "}
                                   {mesa.target_milestone}
                                 </span>
                               )}
@@ -225,7 +225,7 @@ export function DashboardView({
                           {hasTotalPages && (
                             <div className="w-full h-1.5 bg-paper-300 dark:bg-ink-surface-2 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-brand-700 dark:bg-brand-500 rounded-full"
+                                className="h-full bg-gradient-to-r from-brand-700 via-amber-600 to-amber-500 rounded-full"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -307,13 +307,13 @@ export function DashboardView({
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="brand" className="text-[10px]">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-amber-100 text-amber-950 border border-amber-300 dark:bg-amber-900/60 dark:text-amber-100 dark:border-amber-700 shadow-2xs">
                               {mesa.title}
-                            </Badge>
+                            </span>
                             {mesa.is_member && (
-                              <Badge variant="outline" className="text-[10px]">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-emerald-100 text-emerald-950 border border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-100 dark:border-emerald-700 shadow-2xs">
                                 Você participa
-                              </Badge>
+                              </span>
                             )}
                           </div>
                           <h3 className="font-display text-h3 text-ink-900 dark:text-paper-50 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition">

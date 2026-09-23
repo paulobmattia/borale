@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export interface UpdateProfileInput {
   displayName?: string;
   bio?: string;
+  favoriteBook?: string;
   favoriteGenres?: string[];
   avatarUrl?: string;
 }
@@ -173,6 +174,11 @@ export async function updateProfile(input: UpdateProfileInput) {
     throw new Error("A biografia deve ter no máximo 500 caracteres.");
   }
 
+  const favoriteBook = input.favoriteBook?.trim();
+  if (favoriteBook && favoriteBook.length > 200) {
+    throw new Error("O nome do livro favorito deve ter no máximo 200 caracteres.");
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -182,18 +188,51 @@ export async function updateProfile(input: UpdateProfileInput) {
     throw new Error("Você precisa estar autenticado para atualizar o perfil.");
   }
 
+  const updates: {
+    display_name: string;
+    bio: string | null;
+    favorite_book?: string | null;
+    favorite_genres: string[];
+    avatar_url: string | null;
+  } = {
+    display_name: displayName,
+    bio: bio || null,
+    favorite_genres: input.favoriteGenres || [],
+    avatar_url: input.avatarUrl !== undefined ? input.avatarUrl : null,
+  };
+
+  if (input.favoriteBook !== undefined) {
+    updates.favorite_book = favoriteBook || null;
+  }
+
   const { error } = await supabase
     .from("profiles")
-    .update({
-      display_name: displayName,
-      bio: bio || null,
-      favorite_genres: input.favoriteGenres || [],
-      avatar_url: input.avatarUrl !== undefined ? input.avatarUrl : null,
-    })
+    .update(updates)
     .eq("id", user.id);
 
   if (error) {
-    throw new Error(`Erro ao atualizar perfil: ${error.message}`);
+    // Se a coluna favorite_book ainda não existir no Supabase, tenta salvar os demais campos
+    if (
+      error.message?.includes("favorite_book") ||
+      error.message?.includes("column")
+    ) {
+      delete updates.favorite_book;
+      const { error: retryError } = await supabase
+        .from("profiles")
+        .update({
+          display_name: updates.display_name,
+          bio: updates.bio,
+          favorite_genres: updates.favorite_genres,
+          avatar_url: updates.avatar_url,
+        })
+        .eq("id", user.id);
+
+      if (retryError) {
+        throw new Error(`Erro ao atualizar perfil: ${retryError.message}`);
+      }
+    } else {
+      throw new Error(`Erro ao atualizar perfil: ${error.message}`);
+    }
   }
 
   revalidatePath("/perfil/me");

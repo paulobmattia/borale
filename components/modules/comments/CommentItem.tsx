@@ -62,10 +62,72 @@ export interface CommentItemProps {
   ) => Promise<void> | void;
 }
 
+export interface PostItTheme {
+  border: string;
+  bg: string;
+  flag: string;
+  replyBorder: string;
+}
+
+export function getPostItTheme(id: string): PostItTheme {
+  const themes: PostItTheme[] = [
+    // Amarelo Canário (Post-it clássico)
+    {
+      border: "border-l-amber-400 dark:border-l-amber-500",
+      bg: "bg-amber-50/40 dark:bg-amber-950/20",
+      flag: "bg-amber-100 text-amber-950 border-amber-300 dark:bg-amber-900/60 dark:text-amber-100 dark:border-amber-700",
+      replyBorder: "border-l-amber-400/80 dark:border-l-amber-500/80",
+    },
+    // Rosa Marca-texto
+    {
+      border: "border-l-rose-400 dark:border-l-rose-500",
+      bg: "bg-rose-50/40 dark:bg-rose-950/20",
+      flag: "bg-rose-100 text-rose-950 border-rose-300 dark:bg-rose-900/60 dark:text-rose-100 dark:border-rose-700",
+      replyBorder: "border-l-rose-400/80 dark:border-l-rose-500/80",
+    },
+    // Verde Menta
+    {
+      border: "border-l-emerald-400 dark:border-l-emerald-500",
+      bg: "bg-emerald-50/40 dark:bg-emerald-950/20",
+      flag: "bg-emerald-100 text-emerald-950 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-100 dark:border-emerald-700",
+      replyBorder: "border-l-emerald-400/80 dark:border-l-emerald-500/80",
+    },
+    // Azul Celeste
+    {
+      border: "border-l-sky-400 dark:border-l-sky-500",
+      bg: "bg-sky-50/40 dark:bg-sky-950/20",
+      flag: "bg-sky-100 text-sky-950 border-sky-300 dark:bg-sky-900/60 dark:text-sky-100 dark:border-sky-700",
+      replyBorder: "border-l-sky-400/80 dark:border-l-sky-500/80",
+    },
+    // Lavanda / Lilás
+    {
+      border: "border-l-purple-400 dark:border-l-purple-500",
+      bg: "bg-purple-50/40 dark:bg-purple-950/20",
+      flag: "bg-purple-100 text-purple-950 border-purple-300 dark:bg-purple-900/60 dark:text-purple-100 dark:border-purple-700",
+      replyBorder: "border-l-purple-400/80 dark:border-l-purple-500/80",
+    },
+    // Laranja Pêssego
+    {
+      border: "border-l-orange-400 dark:border-l-orange-500",
+      bg: "bg-orange-50/40 dark:bg-orange-950/20",
+      flag: "bg-orange-100 text-orange-950 border-orange-300 dark:bg-orange-900/60 dark:text-orange-100 dark:border-orange-700",
+      replyBorder: "border-l-orange-400/80 dark:border-l-orange-500/80",
+    },
+  ];
+
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  return themes[Math.abs(hash) % themes.length];
+}
+
 function ReplyItem({
   reply,
   currentUserProgress,
   onToggleReaction,
+  theme,
 }: {
   reply: CommentReplyData;
   currentUserProgress?: {
@@ -73,6 +135,7 @@ function ReplyItem({
     current_chapter: number;
   } | null;
   onToggleReaction?: (commentId: string, type: ReactionType) => void;
+  theme?: PostItTheme;
 }) {
   const isSpoiler = React.useMemo(() => {
     return isSpoilerForUser(
@@ -88,7 +151,11 @@ function ReplyItem({
   const [isRevealed, setIsRevealed] = React.useState(!isSpoiler);
 
   return (
-    <div className="rounded-md border border-line/70 bg-paper-100/90 dark:bg-ink-surface-2/60 dark:border-ink-line/70 p-3 space-y-2 text-xs">
+    <div
+      className={`rounded-md border border-line/70 bg-paper-100/95 dark:bg-ink-surface-2/60 dark:border-ink-line/70 p-3 space-y-2 text-xs border-l-2 ${
+        theme?.replyBorder || "border-l-brand-600/60"
+      }`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Avatar
@@ -182,6 +249,11 @@ export function CommentItem({
     comment.page_ref
   );
 
+  const postitTheme = React.useMemo(
+    () => getPostItTheme(comment.id),
+    [comment.id]
+  );
+
   const handleReplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyContent.trim() || !onAddReply) return;
@@ -203,7 +275,9 @@ export function CommentItem({
   };
 
   return (
-    <article className="group relative rounded-md border border-line bg-paper-100 dark:bg-ink-surface dark:border-ink-line p-4 transition-all duration-150 shadow-sm border-l-4 border-l-brand-700/70 dark:border-l-brand-500/70 space-y-3">
+    <article
+      className={`group relative rounded-md border border-line ${postitTheme.bg} bg-paper-100 dark:bg-ink-surface dark:border-ink-line p-4 transition-all duration-150 shadow-xs border-l-4 ${postitTheme.border} space-y-3`}
+    >
       {/* Cabeçalho da Nota de Margem */}
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2.5">
@@ -227,14 +301,13 @@ export function CommentItem({
           </div>
         </div>
 
-        {/* Localização da leitura e flag de spoiler */}
+        {/* Localização da leitura com etiqueta adesiva Post-it e flag de spoiler */}
         <div className="flex items-center gap-1.5">
-          <Badge
-            variant={isSpoiler && !isRevealed ? "warning" : "default"}
-            className="text-[11px]"
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-sans font-semibold border shadow-xs ${postitTheme.flag}`}
           >
             {locationLabel}
-          </Badge>
+          </span>
           {isSpoiler && (
             <Badge variant="error" className="text-[10px] gap-1">
               <ShieldAlert className="w-3 h-3 stroke-[1.75]" /> Spoiler
@@ -332,7 +405,9 @@ export function CommentItem({
 
       {/* Seção Aninhada de Discussão (Thread) */}
       {(isRepliesOpen || isReplying) && (
-        <div className="ml-2 sm:ml-4 pl-3 border-l-2 border-brand-700/20 dark:border-brand-500/30 space-y-3 pt-1">
+        <div
+          className={`ml-2 sm:ml-4 pl-3 border-l-2 ${postitTheme.replyBorder} space-y-3 pt-1`}
+        >
           {/* Lista de respostas */}
           {comment.replies && comment.replies.length > 0 && isRepliesOpen && (
             <div className="space-y-2.5">
@@ -342,6 +417,7 @@ export function CommentItem({
                   reply={reply}
                   currentUserProgress={currentUserProgress}
                   onToggleReaction={onToggleReaction}
+                  theme={postitTheme}
                 />
               ))}
             </div>
