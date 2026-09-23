@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, ShieldAlert, Sparkles, ArrowRight } from "lucide-react";
+import { Users, ShieldAlert, Sparkles, ArrowRight, BookOpen, Compass, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
 export default function HomePage() {
@@ -17,21 +17,24 @@ export default function HomePage() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-3">
             <Link
               href="/login"
-              className="text-sm font-medium text-ink-700 hover:text-ink-900 dark:text-paper-200 dark:hover:text-paper-50 transition-colors min-h-[36px] inline-flex items-center"
+              className="text-sm font-medium text-ink-700 hover:text-ink-900 dark:text-paper-200 dark:hover:text-paper-50 transition-colors min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-paper-200/50 dark:hover:bg-ink-surface/50"
             >
-              Entrar
+              <LogIn className="w-4 h-4" />
+              <span>Já tenho conta · Entrar</span>
             </Link>
             <Link href="/cadastro">
-              <Button size="sm">Começar a ler</Button>
+              <Button size="sm" leftIcon={<UserPlus className="w-3.5 h-3.5" />}>
+                Criar Conta Gratuita
+              </Button>
             </Link>
           </nav>
         </header>
 
         {/* Hero Section Editorial */}
-        <section className="py-16 md:py-24 text-center reading-column">
+        <section className="py-16 md:py-20 text-center reading-column">
           <p className="text-xs md:text-sm uppercase tracking-widest text-brand-700 dark:text-brand-300 font-semibold mb-4">
             Leitura Social & Síncrona
           </p>
@@ -39,8 +42,7 @@ export default function HomePage() {
             O livro continua depois que a página vira digital.
           </h1>
           <p className="font-reading text-body-lg text-ink-700 dark:text-paper-200 mb-10 leading-relaxed">
-            Crie Mesas de Leitura com seus amigos, acompanhe o progresso em tempo real
-            e troque impressões nas margens com proteção automática contra spoilers.
+            Reúna seu clube do livro, defina metas semanais conjuntas e troque anotações de margem em tempo real — com proteção inteligente contra spoilers.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -50,18 +52,38 @@ export default function HomePage() {
                 className="w-full sm:w-auto"
                 rightIcon={<ArrowRight className="w-4 h-4 stroke-[1.75]" />}
               >
-                Criar minha primeira mesa
+                Criar conta e começar a ler
               </Button>
             </Link>
-            <Link href="/dashboard" className="w-full sm:w-auto">
+            <Link href="/login" className="w-full sm:w-auto">
               <Button
                 variant="secondary"
                 size="lg"
                 className="w-full sm:w-auto"
+                leftIcon={<LogIn className="w-4 h-4" />}
               >
-                Explorar mesas abertas
+                Já tenho conta · Fazer login
               </Button>
             </Link>
+          </div>
+
+          {/* Esclarecimento sobre Mesas Privadas vs Mesas Abertas */}
+          <div className="mt-10 p-5 rounded-lg border border-line dark:border-ink-line bg-paper-200/40 dark:bg-ink-surface/40 text-left max-w-2xl mx-auto space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+              <Compass className="w-4 h-4" />
+              <span>Como funcionam as Mesas no Boralê?</span>
+            </div>
+            <p className="font-reading text-sm text-ink-700 dark:text-paper-200 leading-relaxed">
+              Você pode criar <strong>Mesas Privadas</strong> exclusivas para seus amigos e clube de leitura com acesso restrito, ou participar de <strong>Mesas Abertas</strong> criadas pela comunidade para compartilhar impressões com novos leitores.
+            </p>
+            <div className="pt-1">
+              <Link
+                href="/dashboard"
+                className="text-xs font-semibold text-brand-700 dark:text-brand-300 hover:underline inline-flex items-center gap-1"
+              >
+                Conhecer o catálogo de mesas públicas abertas <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
           </div>
         </section>
 

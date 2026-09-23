@@ -23,6 +23,18 @@ export default async function MesaPage({ params }: MesaPageProps) {
     ? mesaData.members.some((m: any) => m.id === mesaData?.currentUserId)
     : true;
 
+  const isCreator = Boolean(
+    mesaData?.currentUserId &&
+      mesaData?.mesa?.created_by === mesaData.currentUserId
+  );
+  const isAdmin = Boolean(
+    mesaData?.currentUserId &&
+      mesaData?.members?.some(
+        (m: any) => m.id === mesaData.currentUserId && m.role === "admin"
+      )
+  );
+  const canEdit = isCreator || isAdmin;
+
   return (
     <MesaView
       id={id}
@@ -33,6 +45,7 @@ export default async function MesaPage({ params }: MesaPageProps) {
               book_title: mesaData.mesa.book_title,
               book_author: mesaData.mesa.book_author,
               book_cover_url: mesaData.mesa.book_cover_url,
+              is_private: mesaData.mesa.is_private,
             }
           : undefined
       }
@@ -43,6 +56,7 @@ export default async function MesaPage({ params }: MesaPageProps) {
       initialComments={comments.length ? comments : undefined}
       initialUserProgress={mesaData?.currentUserProgress}
       isMember={isMember}
+      canEdit={canEdit}
     />
   );
 }

@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Users, ShieldAlert, Sparkles, BookOpen, UserPlus } from "lucide-react";
+import { ArrowLeft, Users, ShieldAlert, Sparkles, BookOpen, UserPlus, Settings, Camera } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import {
   ReadingProgressBar,
   MesaMembers,
   MilestoneTimeline,
+  EditMesaModal,
   type MesaMemberData,
   type MilestoneItem,
 } from "@/components/modules/mesa";
@@ -35,6 +36,7 @@ export interface MesaViewProps {
     book_title: string;
     book_author: string;
     book_cover_url?: string | null;
+    is_private?: boolean;
   };
   initialMembers?: MesaMemberData[];
   initialMilestones?: MilestoneItem[];
@@ -44,6 +46,7 @@ export interface MesaViewProps {
     current_chapter: number;
   } | null;
   isMember?: boolean;
+  canEdit?: boolean;
 }
 
 export function MesaView({
@@ -53,6 +56,7 @@ export function MesaView({
     book_title: "A Hora da Estrela",
     book_author: "Clarice Lispector",
     book_cover_url: null,
+    is_private: false,
   },
   initialMembers = [
     {
@@ -148,7 +152,15 @@ export function MesaView({
     current_chapter: 1,
   },
   isMember = true,
+  canEdit = false,
 }: MesaViewProps) {
+  const [mesa, setMesa] = React.useState(initialMesa);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setMesa(initialMesa);
+  }, [initialMesa]);
+
   const [userProgress, setUserProgress] = React.useState(
     initialUserProgress || { current_page: 0, current_chapter: 0 }
   );
@@ -347,6 +359,17 @@ export function MesaView({
             <ArrowLeft className="w-4 h-4" /> Voltar ao Painel
           </Link>
           <div className="flex items-center gap-3">
+            {canEdit && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditModalOpen(true)}
+                leftIcon={<Settings className="w-3.5 h-3.5" />}
+              >
+                Editar Mesa
+              </Button>
+            )}
+
             {!isGroupMember ? (
               <Button
                 size="sm"
@@ -386,33 +409,54 @@ export function MesaView({
 
         {/* Cabeçalho Editorial do Livro */}
         <div className="flex flex-col md:flex-row gap-6 items-start pb-8 border-b border-line dark:border-ink-line">
-          <div className="w-32 h-44 rounded bg-paper-300 dark:bg-ink-surface-2 border border-line dark:border-ink-line flex-shrink-0 flex items-center justify-center text-center p-3 font-display text-base text-ink-700 dark:text-paper-200 shadow-editorial overflow-hidden">
-            {initialMesa.book_cover_url ? (
+          <div className="relative group/cover w-32 h-44 rounded bg-paper-300 dark:bg-ink-surface-2 border border-line dark:border-ink-line flex-shrink-0 flex items-center justify-center text-center p-3 font-display text-base text-ink-700 dark:text-paper-200 shadow-editorial overflow-hidden">
+            {mesa.book_cover_url ? (
               <img
-                src={initialMesa.book_cover_url}
-                alt={initialMesa.book_title}
+                src={mesa.book_cover_url}
+                alt={mesa.book_title}
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span>{initialMesa.book_title}</span>
+              <span>{mesa.book_title}</span>
+            )}
+
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                title="Alterar capa da mesa"
+                className="absolute inset-0 bg-ink-950/75 opacity-0 group-hover/cover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 text-paper-50 p-2 text-center text-xs font-sans font-medium"
+              >
+                <Camera className="w-5 h-5 text-brand-300" />
+                <span className="text-[11px] leading-tight">Trocar Capa</span>
+              </button>
             )}
           </div>
 
           <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs uppercase tracking-widest text-brand-700 dark:text-brand-300 font-semibold px-2 py-0.5 rounded bg-paper-200 dark:bg-ink-surface border border-line dark:border-ink-line">
-                {initialMesa.title}
+                {mesa.title}
               </span>
               <span className="text-xs text-ink-500 dark:text-paper-200/60 flex items-center gap-1">
                 <Users className="w-3.5 h-3.5" /> {members.length} leitores
               </span>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="text-xs text-brand-700 dark:text-brand-300 hover:underline inline-flex items-center gap-1 ml-2 font-medium"
+                >
+                  <Settings className="w-3 h-3" /> Editar informações
+                </button>
+              )}
             </div>
 
             <h1 className="font-display text-h1 text-ink-900 dark:text-paper-50 leading-tight">
-              {initialMesa.book_title}
+              {mesa.book_title}
             </h1>
             <p className="font-reading text-body-lg text-ink-700 dark:text-paper-200 italic">
-              {initialMesa.book_author}
+              {mesa.book_author}
             </p>
             <p className="font-reading text-body text-ink-700 dark:text-paper-200 max-w-2xl leading-relaxed">
               Mesa de leitura compartilhada. Notas da margem, marcos semanais e reações sincronizadas entre leitores.
@@ -450,6 +494,20 @@ export function MesaView({
           </div>
         </div>
       </main>
+
+      {/* Modal de Edição de Mesa */}
+      <EditMesaModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        groupId={id}
+        initialData={mesa}
+        onSaved={(updated) =>
+          setMesa((prev) => ({
+            ...prev,
+            ...updated,
+          }))
+        }
+      />
     </div>
   );
 }

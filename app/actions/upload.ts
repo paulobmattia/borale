@@ -74,6 +74,14 @@ export async function uploadImage(formData: FormData): Promise<UploadResult> {
       });
 
     if (uploadError) {
+      if (
+        uploadError.message?.toLowerCase().includes("bucket not found") ||
+        (uploadError as any).statusCode === "404"
+      ) {
+        return {
+          error: `O bucket de armazenamento '${bucket}' não foi encontrado no Supabase. Execute o script 'setup-storage-and-triggers.sql' no SQL Editor do Supabase para criá-lo.`,
+        };
+      }
       return { error: `Erro no upload: ${uploadError.message}` };
     }
 

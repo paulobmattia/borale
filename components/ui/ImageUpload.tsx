@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createClient } from "@/lib/supabase/client";
 import { uploadImage } from "@/app/actions/upload";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,11 @@ export function ImageUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 10 * 1024 * 1024) {
+      setError("A imagem não pode ultrapassar o limite de 10MB.");
+      return;
+    }
+
     // Preview local imediato
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
@@ -44,6 +50,49 @@ export function ImageUpload({
     setIsUploading(true);
 
     try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        // Envio direto do navegador para o Supabase Storage (sem restrição de payload da Vercel)
+        const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const sanitizedName = file.name
+          .replace(/\.[^/.]+$/, "")
+          .replace(/[^a-zA-Z0-9_-]/g, "_")
+          .slice(0, 30);
+        const filePath = `${user.id}/${Date.now()}_${sanitizedName}.${fileExt}`;
+
+        const { error: clientUploadError } = await supabase.storage
+          .from(bucket)
+          .upload(filePath, file, {
+            upsert: true,
+            contentType: file.type,
+          });
+
+        if (!clientUploadError) {
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+          setPreviewUrl(publicUrl);
+          onChange(publicUrl);
+          setIsUploading(false);
+          return;
+        }
+
+        if (
+          clientUploadError.message?.toLowerCase().includes("bucket not found") ||
+          (clientUploadError as any).statusCode === "404"
+        ) {
+          throw new Error(
+            `O bucket de armazenamento '${bucket}' não foi encontrado. Por favor, execute o script 'setup-storage-and-triggers.sql' no painel do Supabase para criá-lo.`
+          );
+        }
+      }
+
+      // Fallback para Server Action caso o cliente encontre qualquer restrição
       const formData = new FormData();
       formData.append("file", file);
       formData.append("bucket", bucket);
