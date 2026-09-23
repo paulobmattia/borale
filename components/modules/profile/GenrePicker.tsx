@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Search, X } from "lucide-react";
 
 export interface GenrePickerProps {
   selectedGenres: string[];
@@ -81,6 +81,8 @@ export function GenrePicker({
   onChange,
   readOnly = false,
 }: GenrePickerProps) {
+  const [searchTerm, setSearchTerm] = React.useState("");
+
   const toggleGenre = (genre: string) => {
     if (readOnly || !onChange) return;
     if (selectedGenres.includes(genre)) {
@@ -90,6 +92,12 @@ export function GenrePicker({
     }
   };
 
+  const filteredGenres = React.useMemo(() => {
+    if (!searchTerm.trim()) return AVAILABLE_GENRES;
+    const term = searchTerm.toLowerCase().trim();
+    return AVAILABLE_GENRES.filter((g) => g.toLowerCase().includes(term));
+  }, [searchTerm]);
+
   return (
     <div className="space-y-2.5">
       <div className="flex justify-between items-center">
@@ -98,15 +106,49 @@ export function GenrePicker({
           Gêneros Favoritos
         </label>
         {!readOnly && (
-          <span className="text-[11px] text-ink-500">
-            {selectedGenres.length}{" "}
-            {selectedGenres.length === 1 ? "selecionado" : "selecionados"}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-ink-500 font-sans">
+              {selectedGenres.length}{" "}
+              {selectedGenres.length === 1 ? "selecionado" : "selecionados"}
+            </span>
+            {selectedGenres.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onChange?.([])}
+                className="text-[10px] text-ink-400 hover:text-ink-700 dark:hover:text-paper-200 underline font-sans"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {AVAILABLE_GENRES.map((genre) => {
+      {!readOnly && (
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar gênero (ex: Terror, Contos, Distopia...)"
+            className="w-full pl-8 pr-7 py-1.5 text-xs rounded-md border border-line bg-paper-200/50 dark:bg-ink-surface-2 dark:border-ink-line text-ink-900 dark:text-paper-50 placeholder:text-ink-400 focus:outline-none focus:ring-1 focus:ring-brand-500 font-sans"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-ink-400 hover:text-ink-700 dark:hover:text-paper-200"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Caixa de Tags Rolável e Contida */}
+      <div className="max-h-48 overflow-y-auto p-2.5 rounded-lg border border-line/70 dark:border-ink-line/70 bg-paper-200/30 dark:bg-ink-surface-2/30 flex flex-wrap gap-1.5 custom-scrollbar">
+        {filteredGenres.map((genre) => {
           const isSelected = selectedGenres.includes(genre);
 
           if (readOnly && !isSelected) {
@@ -124,7 +166,7 @@ export function GenrePicker({
               className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs rounded-full font-medium transition border shadow-xs ${
                 isSelected
                   ? `${highlightStyle} shadow-sm scale-100 font-semibold`
-                  : "bg-paper-200/50 text-ink-700 border-line hover:bg-paper-200 hover:border-ink-400 dark:bg-ink-surface dark:text-paper-200 dark:border-ink-line opacity-85"
+                  : "bg-paper-100 text-ink-700 border-line hover:bg-paper-200 hover:border-ink-400 dark:bg-ink-surface dark:text-paper-200 dark:border-ink-line opacity-85"
               } ${readOnly ? "cursor-default" : "cursor-pointer active:scale-95"}`}
             >
               {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
@@ -132,6 +174,12 @@ export function GenrePicker({
             </button>
           );
         })}
+
+        {filteredGenres.length === 0 && (
+          <p className="text-xs text-ink-500 py-3 w-full text-center font-sans">
+            Nenhum gênero encontrado com &quot;{searchTerm}&quot;.
+          </p>
+        )}
       </div>
     </div>
   );

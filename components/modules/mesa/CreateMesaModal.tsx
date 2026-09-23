@@ -136,7 +136,7 @@ export function CreateMesaModal({ isOpen, onClose }: CreateMesaModalProps) {
           </span>
         </label>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-line dark:border-ink-line">
+        <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-3.5 bg-paper-100/95 dark:bg-ink-surface/95 backdrop-blur-sm border-t border-line dark:border-ink-line rounded-b-lg flex justify-end gap-2 z-10">
           <Button
             type="button"
             variant="secondary"
