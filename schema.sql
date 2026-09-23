@@ -85,11 +85,12 @@ CREATE TABLE IF NOT EXISTS public.user_progress (
   UNIQUE (group_id, user_id)
 );
 
--- 2.6 Comentários & Notas de Margem com Proteção Anti-Spoiler
+-- 2.6 Comentários & Notas de Margem com Proteção Anti-Spoiler e Respostas
 CREATE TABLE IF NOT EXISTS public.comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   group_id UUID NOT NULL REFERENCES public.reading_groups(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  parent_id UUID REFERENCES public.comments(id) ON DELETE CASCADE,
   chapter_ref INTEGER CONSTRAINT chk_comments_chapter CHECK (chapter_ref IS NULL OR chapter_ref >= 0),
   page_ref INTEGER CONSTRAINT chk_comments_page CHECK (page_ref IS NULL OR page_ref >= 0),
   content TEXT NOT NULL CONSTRAINT chk_comments_content CHECK (char_length(trim(content)) >= 1 AND char_length(content) <= 5000),
@@ -114,6 +115,7 @@ CREATE INDEX IF NOT EXISTS idx_milestones_group_id ON public.milestones(group_id
 CREATE INDEX IF NOT EXISTS idx_user_progress_group_id ON public.user_progress(group_id);
 CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON public.user_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_group_id ON public.comments(group_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON public.comments(parent_id);
 CREATE INDEX IF NOT EXISTS idx_comments_location ON public.comments(group_id, chapter_ref, page_ref);
 CREATE INDEX IF NOT EXISTS idx_reactions_comment_id ON public.reactions(comment_id);
 

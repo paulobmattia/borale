@@ -20,6 +20,10 @@ export interface CommentsListProps {
     has_spoiler: boolean;
   }) => Promise<void> | void;
   onToggleReaction?: (commentId: string, type: ReactionType) => void;
+  onAddReply?: (
+    parentId: string,
+    data: { content: string; has_spoiler: boolean }
+  ) => Promise<void> | void;
 }
 
 export function CommentsList({
@@ -27,6 +31,7 @@ export function CommentsList({
   currentUserProgress,
   onAddComment,
   onToggleReaction,
+  onAddReply,
 }: CommentsListProps) {
   const [filterMode, setFilterMode] = React.useState<"all" | "safe">("all");
 
@@ -110,6 +115,7 @@ export function CommentsList({
               comment={comment}
               currentUserProgress={currentUserProgress}
               onToggleReaction={onToggleReaction}
+              onAddReply={onAddReply}
             />
           ))}
         </div>

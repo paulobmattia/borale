@@ -211,6 +211,7 @@ export interface Database {
           id: string;
           group_id: string;
           user_id: string;
+          parent_id: string | null;
           chapter_ref: number | null;
           page_ref: number | null;
           content: string;
@@ -221,6 +222,7 @@ export interface Database {
           id?: string;
           group_id: string;
           user_id: string;
+          parent_id?: string | null;
           chapter_ref?: number | null;
           page_ref?: number | null;
           content: string;
@@ -231,6 +233,7 @@ export interface Database {
           id?: string;
           group_id?: string;
           user_id?: string;
+          parent_id?: string | null;
           chapter_ref?: number | null;
           page_ref?: number | null;
           content?: string;

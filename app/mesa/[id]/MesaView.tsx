@@ -15,6 +15,7 @@ import {
 import {
   CommentsList,
   type CommentData,
+  type CommentReplyData,
 } from "@/components/modules/comments";
 import {
   updateReadingProgress,
@@ -234,38 +235,96 @@ export function MesaView({
     }
   };
 
+  const handleAddReply = async (
+    parentId: string,
+    data: { content: string; has_spoiler: boolean }
+  ) => {
+    const optimisticReply: CommentReplyData = {
+      id: `rep_${Date.now()}`,
+      parent_id: parentId,
+      user_id: "current_user",
+      author_name: "Você",
+      author_username: "leitor",
+      content: data.content,
+      has_spoiler: data.has_spoiler,
+      created_at: new Date().toISOString(),
+      reactions: [],
+    };
+
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment.id === parentId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), optimisticReply],
+          };
+        }
+        return comment;
+      })
+    );
+
+    try {
+      await addComment({
+        groupId: id,
+        parentId,
+        content: data.content,
+        hasSpoiler: data.has_spoiler,
+      });
+    } catch {
+      // Fallback gracioso
+    }
+  };
+
+  const updateReactionsHelper = (reactions: any[], type: ReactionType) => {
+    const list = [...reactions];
+    const existingIndex = list.findIndex((r) => r.type === type);
+    if (existingIndex >= 0) {
+      const current = list[existingIndex];
+      if (current.userReacted) {
+        list[existingIndex] = {
+          ...current,
+          count: Math.max(0, current.count - 1),
+          userReacted: false,
+        };
+      } else {
+        list[existingIndex] = {
+          ...current,
+          count: current.count + 1,
+          userReacted: true,
+        };
+      }
+    } else {
+      list.push({ type, count: 1, userReacted: true });
+    }
+    return list;
+  };
+
   const handleToggleReaction = async (commentId: string, type: ReactionType) => {
     setComments((prev) =>
       prev.map((comment) => {
-        if (comment.id !== commentId) return comment;
-
-        const reactions = [...(comment.reactions || [])];
-        const existingIndex = reactions.findIndex((r) => r.type === type);
-
-        if (existingIndex >= 0) {
-          const current = reactions[existingIndex];
-          if (current.userReacted) {
-            reactions[existingIndex] = {
-              ...current,
-              count: Math.max(0, current.count - 1),
-              userReacted: false,
-            };
-          } else {
-            reactions[existingIndex] = {
-              ...current,
-              count: current.count + 1,
-              userReacted: true,
-            };
-          }
-        } else {
-          reactions.push({
-            type,
-            count: 1,
-            userReacted: true,
-          });
+        // Se for o comentário raiz
+        if (comment.id === commentId) {
+          return {
+            ...comment,
+            reactions: updateReactionsHelper(comment.reactions || [], type),
+          };
         }
 
-        return { ...comment, reactions };
+        // Se for uma resposta aninhada dentro de replies
+        if (comment.replies && comment.replies.some((r) => r.id === commentId)) {
+          const updatedReplies = comment.replies.map((reply) => {
+            if (reply.id === commentId) {
+              return {
+                ...reply,
+                reactions: updateReactionsHelper(reply.reactions || [], type),
+              };
+            }
+            return reply;
+          });
+          return { ...comment, replies: updatedReplies };
+        }
+
+        return comment;
       })
     );
 
@@ -380,6 +439,7 @@ export function MesaView({
               currentUserProgress={userProgress}
               onAddComment={handleAddComment}
               onToggleReaction={handleToggleReaction}
+              onAddReply={handleAddReply}
             />
           </div>
 

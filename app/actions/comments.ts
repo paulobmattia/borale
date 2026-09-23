@@ -7,6 +7,7 @@ import type { ReactionType } from "@/types/database";
 export interface AddCommentInput {
   groupId: string;
   content: string;
+  parentId?: string | null;
   chapterRef?: number;
   pageRef?: number;
   hasSpoiler?: boolean;
@@ -22,7 +23,7 @@ const VALID_REACTIONS: ReactionType[] = [
 ];
 
 /**
- * Adiciona uma nota na margem com validação e proteção anti-spoiler
+ * Adiciona uma nota na margem ou resposta com validação e proteção anti-spoiler
  */
 export async function addComment(input: AddCommentInput) {
   const content = input.content?.trim();
@@ -32,22 +33,24 @@ export async function addComment(input: AddCommentInput) {
   }
 
   if (!content || content.length < 1) {
-    throw new Error("O conteúdo da nota não pode estar vazio.");
+    throw new Error("O conteúdo não pode estar vazio.");
   }
 
   if (content.length > 5000) {
-    throw new Error("A nota deve ter no máximo 5000 caracteres.");
+    throw new Error("O conteúdo deve ter no máximo 5000 caracteres.");
   }
 
-  const chapterRef =
+  let chapterRef =
     input.chapterRef != null && !isNaN(input.chapterRef) && input.chapterRef >= 0
       ? Math.floor(input.chapterRef)
       : null;
 
-  const pageRef =
+  let pageRef =
     input.pageRef != null && !isNaN(input.pageRef) && input.pageRef >= 0
       ? Math.floor(input.pageRef)
       : null;
+
+  const parentId = input.parentId || null;
 
   const supabase = await createClient();
   const {
@@ -55,7 +58,21 @@ export async function addComment(input: AddCommentInput) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Você precisa estar logado para publicar uma nota.");
+    throw new Error("Você precisa estar logado para publicar.");
+  }
+
+  // Se for uma resposta, herda o capítulo e página do comentário pai caso não informados
+  if (parentId) {
+    const { data: parentComment } = await supabase
+      .from("comments")
+      .select("id, chapter_ref, page_ref")
+      .eq("id", parentId)
+      .single();
+
+    if (parentComment) {
+      if (chapterRef === null) chapterRef = parentComment.chapter_ref;
+      if (pageRef === null) pageRef = parentComment.page_ref;
+    }
   }
 
   const { data, error } = await supabase
@@ -63,6 +80,7 @@ export async function addComment(input: AddCommentInput) {
     .insert({
       group_id: input.groupId,
       user_id: user.id,
+      parent_id: parentId,
       content,
       chapter_ref: chapterRef,
       page_ref: pageRef,
@@ -72,7 +90,7 @@ export async function addComment(input: AddCommentInput) {
     .single();
 
   if (error) {
-    throw new Error(`Erro ao publicar nota: ${error.message}`);
+    throw new Error(`Erro ao publicar nota/resposta: ${error.message}`);
   }
 
   revalidatePath(`/mesa/${input.groupId}`);
@@ -129,7 +147,7 @@ export async function toggleReaction(
 }
 
 /**
- * Busca todos os comentários da mesa com perfis e contadores de reações
+ * Busca todos os comentários da mesa agrupados com suas respectivas respostas em thread
  */
 export async function getMesaComments(groupId: string) {
   if (!groupId) return [];
@@ -139,13 +157,14 @@ export async function getMesaComments(groupId: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 1. Busca comentários e autor
+  // 1. Busca todos os comentários da mesa com perfis de autor
   const { data: comments, error } = await supabase
     .from("comments")
     .select(`
       id,
       group_id,
       user_id,
+      parent_id,
       chapter_ref,
       page_ref,
       content,
@@ -158,7 +177,7 @@ export async function getMesaComments(groupId: string) {
       )
     `)
     .eq("group_id", groupId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
 
   if (error || !comments) {
     return [];
@@ -181,10 +200,10 @@ export async function getMesaComments(groupId: string) {
     reactionsByComment.set(r.comment_id, list);
   });
 
-  return comments.map((c: any) => {
+  // 4. Mapeia cada comentário com seus dados e reações
+  const allFormatted = comments.map((c: any) => {
     const commentReactions = reactionsByComment.get(c.id) || [];
 
-    // Agrupa contadores de reações
     const countsMap = new Map<ReactionType, { count: number; userReacted: boolean }>();
     commentReactions.forEach((r) => {
       const current = countsMap.get(r.reaction_type) || { count: 0, userReacted: false };
@@ -203,6 +222,7 @@ export async function getMesaComments(groupId: string) {
 
     return {
       id: c.id,
+      parent_id: c.parent_id,
       user_id: c.user_id,
       author_name: c.profiles?.display_name || "Leitor",
       author_username: c.profiles?.username || "leitor",
@@ -215,4 +235,29 @@ export async function getMesaComments(groupId: string) {
       reactions: reactionCounts,
     };
   });
+
+  // 5. Agrupa em árvore: Comentários Raiz e Respostas Aninhadas
+  const rootComments: any[] = [];
+  const repliesByParent = new Map<string, any[]>();
+
+  allFormatted.forEach((item) => {
+    if (item.parent_id) {
+      const list = repliesByParent.get(item.parent_id) || [];
+      list.push(item);
+      repliesByParent.set(item.parent_id, list);
+    } else {
+      rootComments.push(item);
+    }
+  });
+
+  // Comentários raiz: mais recentes primeiro
+  rootComments.sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  // Anexa as respostas em ordem cronológica a cada comentário raiz
+  return rootComments.map((root) => ({
+    ...root,
+    replies: repliesByParent.get(root.id) || [],
+  }));
 }
