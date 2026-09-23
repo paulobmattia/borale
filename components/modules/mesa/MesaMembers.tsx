@@ -1,4 +1,5 @@
 import * as React from "react";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
@@ -49,7 +50,11 @@ export function MesaMembers({ members }: MesaMembersProps) {
             key={member.id}
             className="flex items-center justify-between p-3 hover:bg-paper-200/40 dark:hover:bg-ink-surface-2 transition duration-150"
           >
-            <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href={`/perfil/${encodeURIComponent(member.username)}`}
+              className="flex items-center gap-3 min-w-0 hover:opacity-85 transition group"
+              title={`Ver perfil de ${member.display_name}`}
+            >
               <Avatar
                 src={member.avatar_url}
                 fallbackText={member.display_name}
@@ -57,7 +62,7 @@ export function MesaMembers({ members }: MesaMembersProps) {
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-sans text-sm font-semibold text-ink-900 dark:text-paper-50 truncate">
+                  <span className="font-sans text-sm font-semibold text-ink-900 dark:text-paper-50 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
                     {member.display_name}
                   </span>
                   {member.role === "admin" && (
@@ -70,7 +75,7 @@ export function MesaMembers({ members }: MesaMembersProps) {
                   @{member.username}
                 </span>
               </div>
-            </div>
+            </Link>
 
             <div className="text-right flex-shrink-0">
               {member.current_page != null && (

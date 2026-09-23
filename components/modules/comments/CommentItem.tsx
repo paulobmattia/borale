@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { ReactionPicker, type ReactionCount } from "./ReactionPicker";
@@ -158,18 +159,24 @@ function ReplyItem({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Avatar
-            src={reply.author_avatar}
-            fallbackText={reply.author_name}
-            size="sm"
-            className="w-5 h-5 text-[10px]"
-          />
-          <span className="font-sans font-semibold text-ink-900 dark:text-paper-100">
-            {reply.author_name}
-          </span>
-          <span className="text-[11px] text-ink-500 dark:text-paper-300/60">
-            @{reply.author_username}
-          </span>
+          <Link
+            href={`/perfil/${encodeURIComponent(reply.author_username)}`}
+            className="flex items-center gap-1.5 hover:opacity-85 transition group"
+            title={`Ver perfil de ${reply.author_name}`}
+          >
+            <Avatar
+              src={reply.author_avatar}
+              fallbackText={reply.author_name}
+              size="sm"
+              className="w-5 h-5 text-[10px]"
+            />
+            <span className="font-sans font-semibold text-ink-900 dark:text-paper-100 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+              {reply.author_name}
+            </span>
+            <span className="text-[11px] text-ink-500 dark:text-paper-300/60">
+              @{reply.author_username}
+            </span>
+          </Link>
           <span className="text-ink-300 dark:text-ink-600">·</span>
           <span className="text-[11px] text-ink-500 dark:text-paper-300/60">
             {formatDate(reply.created_at)}
@@ -281,24 +288,30 @@ export function CommentItem({
       {/* Cabeçalho da Nota de Margem */}
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2.5">
-          <Avatar
-            src={comment.author_avatar}
-            fallbackText={comment.author_name}
-            size="sm"
-          />
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-sans font-semibold text-ink-900 dark:text-paper-50">
-                {comment.author_name}
-              </span>
-              <span className="text-ink-500 dark:text-paper-200/60 text-[11px]">
-                @{comment.author_username}
+          <Link
+            href={`/perfil/${encodeURIComponent(comment.author_username)}`}
+            className="flex items-center gap-2.5 hover:opacity-85 transition group"
+            title={`Ver perfil de ${comment.author_name}`}
+          >
+            <Avatar
+              src={comment.author_avatar}
+              fallbackText={comment.author_name}
+              size="sm"
+            />
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-sans font-semibold text-ink-900 dark:text-paper-50 group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
+                  {comment.author_name}
+                </span>
+                <span className="text-ink-500 dark:text-paper-200/60 text-[11px]">
+                  @{comment.author_username}
+                </span>
+              </div>
+              <span className="text-[11px] text-ink-500 dark:text-paper-200/50 block">
+                {formatDate(comment.created_at)}
               </span>
             </div>
-            <span className="text-[11px] text-ink-500 dark:text-paper-200/50">
-              {formatDate(comment.created_at)}
-            </span>
-          </div>
+          </Link>
         </div>
 
         {/* Localização da leitura com etiqueta adesiva Post-it e flag de spoiler */}

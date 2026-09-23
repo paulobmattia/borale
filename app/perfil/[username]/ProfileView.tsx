@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Edit3, Bookmark } from "lucide-react";
+import { ArrowLeft, Edit3, Bookmark, Share2, Check } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import {
@@ -52,6 +52,33 @@ export function ProfileView({
 }: ProfileViewProps) {
   const [profile, setProfile] = React.useState(initialProfile);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+
+  const handleShareProfile = async () => {
+    const profileUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/perfil/${encodeURIComponent(username)}`
+        : `/perfil/${username}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Perfil de ${profile.display_name} no Boralê`,
+          text: `Conheça as preferências literárias e a estante de ${profile.display_name} no Boralê!`,
+          url: profileUrl,
+        });
+        return;
+      } catch {
+        // Fallback para cópia
+      }
+    }
+
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(profileUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-paper-100 dark:bg-ink-bg flex flex-col">
@@ -90,8 +117,24 @@ export function ProfileView({
                 </span>
               </div>
 
-              {isCurrentUser && (
-                <div className="flex items-center gap-2 justify-center sm:justify-end">
+              <div className="flex items-center gap-2 justify-center sm:justify-end flex-wrap">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShareProfile}
+                  leftIcon={
+                    copied ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    ) : (
+                      <Share2 className="w-3.5 h-3.5" />
+                    )
+                  }
+                  className="text-xs"
+                >
+                  {copied ? "Link copiado!" : "Compartilhar Perfil"}
+                </Button>
+
+                {isCurrentUser && (
                   <Button
                     variant="secondary"
                     size="sm"
@@ -100,8 +143,8 @@ export function ProfileView({
                   >
                     Editar Perfil
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {profile.bio ? (
