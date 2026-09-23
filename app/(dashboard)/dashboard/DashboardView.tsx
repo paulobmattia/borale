@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { CreateMesaModal } from "@/components/modules/mesa/CreateMesaModal";
+import { AdSenseBanner } from "@/components/ui/AdSenseBanner";
 
 export interface DashboardMesaItem {
   id: string;
@@ -349,6 +350,9 @@ export function DashboardView({
             )}
           </section>
         )}
+
+        {/* Publicidade Discreta */}
+        <AdSenseBanner className="pt-2" />
       </main>
 
       {/* Modal de Criação de Mesa */}

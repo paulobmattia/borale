@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Users, ShieldAlert, Sparkles, ArrowRight, BookOpen, Compass, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { AdSenseBanner } from "@/components/ui/AdSenseBanner";
 
 export default function HomePage() {
   return (
@@ -125,6 +126,9 @@ export default function HomePage() {
             </p>
           </div>
         </section>
+
+        {/* Espaço de Publicidade Discreta */}
+        <AdSenseBanner className="py-2" />
 
         {/* Rodapé */}
         <footer className="py-6 border-t border-line dark:border-ink-line text-center">

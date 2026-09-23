@@ -12,6 +12,7 @@ import {
   EditProfileModal,
   type BookItem,
 } from "@/components/modules/profile";
+import { AdSenseBanner } from "@/components/ui/AdSenseBanner";
 
 export interface ProfileViewProps {
   username: string;
@@ -223,6 +224,9 @@ export function ProfileView({
             </div>
           )}
         </section>
+
+        {/* Publicidade Discreta */}
+        <AdSenseBanner className="pt-2" />
       </main>
 
       {/* Modal de Edição de Perfil */}
