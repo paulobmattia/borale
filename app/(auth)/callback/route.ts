@@ -10,6 +10,40 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Assegura que o perfil do usuário existe (fallback seguro)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile) {
+          const rawMeta = user.user_metadata || {};
+          const emailPrefix = user.email ? user.email.split("@")[0] : `leitor_${user.id.slice(0, 6)}`;
+          const baseUsername = (rawMeta.username || emailPrefix)
+            .toLowerCase()
+            .replace(/[^a-z0-9_]/g, "");
+          const username = baseUsername.length >= 3 ? baseUsername : `leitor_${user.id.slice(0, 6)}`;
+          const displayName = rawMeta.full_name || rawMeta.name || emailPrefix || "Leitor Boralê";
+          const avatarUrl = rawMeta.avatar_url || rawMeta.picture || null;
+
+          await supabase.from("profiles").upsert(
+            {
+              id: user.id,
+              username,
+              display_name: displayName,
+              avatar_url: avatarUrl,
+            },
+            { onConflict: "id" }
+          );
+        }
+      }
+
       const forwardedHost = request.headers.get("x-forwarded-host");
       const isLocalEnv = process.env.NODE_ENV === "development";
       if (isLocalEnv) {

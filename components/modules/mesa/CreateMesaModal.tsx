@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createMesa } from "@/app/actions/mesa";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { BookOpen, Plus, Lock } from "lucide-react";
 
 export interface CreateMesaModalProps {
@@ -104,14 +105,23 @@ export function CreateMesaModal({ isOpen, onClose }: CreateMesaModalProps) {
           />
         </div>
 
-        <Input
-          id="cover-url"
-          label="URL da Capa (Opcional)"
-          placeholder="https://exemplo.com/capa.jpg"
-          value={bookCoverUrl}
-          onChange={(e) => setBookCoverUrl(e.target.value)}
-          hint="Link de imagem pública para a capa do livro"
-        />
+        <div className="space-y-2">
+          <ImageUpload
+            bucket="covers"
+            value={bookCoverUrl}
+            onChange={setBookCoverUrl}
+            aspectRatio="cover"
+            label="Capa da Obra (Opcional)"
+            hint="Envie uma imagem do seu dispositivo ou insira o link direto abaixo"
+          />
+          <input
+            type="url"
+            placeholder="Ou cole a URL direta da capa (https://...)"
+            value={bookCoverUrl}
+            onChange={(e) => setBookCoverUrl(e.target.value)}
+            className="w-full h-8 px-2.5 text-xs rounded border border-line bg-paper-100 dark:bg-ink-surface-2 dark:border-ink-line text-ink-900 dark:text-paper-50 placeholder:text-ink-400 focus:outline-none focus:ring-1 focus:ring-brand-500 font-sans"
+          />
+        </div>
 
         <label className="flex items-center gap-2 text-xs font-medium text-ink-700 dark:text-paper-200 cursor-pointer pt-1 select-none">
           <input

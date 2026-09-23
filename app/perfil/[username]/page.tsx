@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { ProfileView } from "./ProfileView";
 import { getProfile } from "@/app/actions/profile";
 
@@ -12,12 +13,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   try {
     profileData = await getProfile(username);
   } catch {
-    // Fallback gracioso durante testes locais
+    // Fallback gracioso
+  }
+
+  if (!profileData && username === "me") {
+    redirect("/login");
   }
 
   return (
     <ProfileView
-      username={username}
+      username={profileData?.profile?.username || username}
       initialProfile={
         profileData?.profile
           ? {
@@ -29,6 +34,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           : undefined
       }
       initialStats={profileData?.stats}
+      initialBooks={profileData?.books || []}
+      isCurrentUser={profileData?.isCurrentUser ?? (username === "me")}
     />
   );
 }

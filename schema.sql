@@ -438,3 +438,85 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated;
+
+-- 8. STORAGE BUCKETS (covers e avatars)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('covers', 'covers', true)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Capas de livros sao públicas" ON storage.objects;
+CREATE POLICY "Capas de livros sao públicas" ON storage.objects FOR SELECT USING (bucket_id = 'covers');
+
+DROP POLICY IF EXISTS "Avatares de usuarios sao públicos" ON storage.objects;
+CREATE POLICY "Avatares de usuarios sao públicos" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Usuarios autenticados podem enviar capas" ON storage.objects;
+CREATE POLICY "Usuarios autenticados podem enviar capas" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'covers' AND auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Usuarios autenticados podem enviar avatares" ON storage.objects;
+CREATE POLICY "Usuarios autenticados podem enviar avatares" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Usuarios podem atualizar proprios arquivos em covers" ON storage.objects;
+CREATE POLICY "Usuarios podem atualizar proprios arquivos em covers" ON storage.objects FOR UPDATE USING (bucket_id = 'covers' AND auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Usuarios podem atualizar proprios arquivos em avatars" ON storage.objects;
+CREATE POLICY "Usuarios podem atualizar proprios arquivos em avatars" ON storage.objects FOR UPDATE USING (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+
+-- 9. TRIGGER AUTOMÁTICO PARA CRIAÇÃO DE PERFIL
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+DECLARE
+  base_username text;
+  clean_username text;
+  display_name_val text;
+  avatar_val text;
+BEGIN
+  display_name_val := COALESCE(
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'name',
+    SPLIT_PART(NEW.email, '@', 1),
+    'Leitor Boralê'
+  );
+
+  base_username := COALESCE(
+    NEW.raw_user_meta_data->>'username',
+    SPLIT_PART(NEW.email, '@', 1)
+  );
+  clean_username := LOWER(REGEXP_REPLACE(base_username, '[^a-zA-Z0-9_]', '', 'g'));
+  
+  IF char_length(clean_username) < 3 THEN
+    clean_username := 'leitor_' || SUBSTRING(NEW.id::text FROM 1 FOR 6);
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE username = clean_username AND id <> NEW.id) THEN
+    clean_username := clean_username || '_' || SUBSTRING(NEW.id::text FROM 1 FOR 4);
+  END IF;
+
+  avatar_val := COALESCE(
+    NEW.raw_user_meta_data->>'avatar_url',
+    NEW.raw_user_meta_data->>'picture'
+  );
+
+  INSERT INTO public.profiles (id, username, display_name, avatar_url)
+  VALUES (NEW.id, clean_username, display_name_val, avatar_val)
+  ON CONFLICT (id) DO UPDATE SET
+    avatar_url = COALESCE(EXCLUDED.avatar_url, public.profiles.avatar_url),
+    display_name = CASE 
+      WHEN public.profiles.display_name IS NULL OR public.profiles.display_name = '' 
+      THEN EXCLUDED.display_name 
+      ELSE public.profiles.display_name 
+    END;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+

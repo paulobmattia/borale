@@ -27,66 +27,29 @@ export interface ProfileViewProps {
     totalNotes: number;
     pagesRead: number;
   };
+  initialBooks?: BookItem[];
   isCurrentUser?: boolean;
 }
 
 export function ProfileView({
   username,
   initialProfile = {
-    display_name: username === "clarice" ? "Clarice Fan" : username,
-    bio: "Leitor em busca de boas conversas nas margens dos livros. Apreciador de ficção brasileira moderna, realismo mágico e ensaios literários.",
+    display_name: username,
+    bio: null,
     avatar_url: null,
-    favorite_genres: [
-      "Ficção Brasileira",
-      "Realismo Mágico",
-      "Clássicos",
-      "Filosofia",
-    ],
+    favorite_genres: [],
   },
   initialStats = {
-    activeGroups: 1,
-    completedBooks: 12,
-    totalNotes: 48,
-    pagesRead: 2840,
+    activeGroups: 0,
+    completedBooks: 0,
+    totalNotes: 0,
+    pagesRead: 0,
   },
-  isCurrentUser = true,
+  initialBooks = [],
+  isCurrentUser = false,
 }: ProfileViewProps) {
   const [profile, setProfile] = React.useState(initialProfile);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-
-  const mockBooks: BookItem[] = [
-    {
-      id: "b1",
-      title: "A Hora da Estrela",
-      author: "Clarice Lispector",
-      status: "reading",
-      current_page: 42,
-      total_pages: 110,
-    },
-    {
-      id: "b2",
-      title: "Grande Sertão: Veredas",
-      author: "João Guimarães Rosa",
-      status: "completed",
-      current_page: 600,
-      total_pages: 600,
-    },
-    {
-      id: "b3",
-      title: "Torto Arado",
-      author: "Itamar Vieira Junior",
-      status: "completed",
-      current_page: 264,
-      total_pages: 264,
-    },
-    {
-      id: "b4",
-      title: "Memórias Póstumas de Brás Cubas",
-      author: "Machado de Assis",
-      status: "want_to_read",
-      total_pages: 200,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-paper-100 dark:bg-ink-bg flex flex-col">
@@ -139,11 +102,15 @@ export function ProfileView({
               )}
             </div>
 
-            {profile.bio && (
-              <p className="font-reading text-body text-ink-700 dark:text-paper-200 max-w-xl">
+            {profile.bio ? (
+              <p className="font-reading text-body text-ink-700 dark:text-paper-200 max-w-xl leading-relaxed whitespace-pre-line">
                 {profile.bio}
               </p>
-            )}
+            ) : isCurrentUser ? (
+              <p className="font-reading text-sm italic text-ink-500 dark:text-paper-300/70 max-w-xl">
+                Você ainda não adicionou uma biografia literária. Clique em &ldquo;Editar Perfil&rdquo; para contar um pouco sobre suas preferências de leitura.
+              </p>
+            ) : null}
 
             {profile.favorite_genres?.length > 0 && (
               <GenrePicker
@@ -164,7 +131,28 @@ export function ProfileView({
               Estante Literária
             </h2>
           </div>
-          <Bookshelf books={mockBooks} />
+
+          {initialBooks.length > 0 ? (
+            <Bookshelf books={initialBooks} />
+          ) : (
+            <div className="p-8 rounded-lg border border-line bg-paper-100 dark:bg-ink-surface text-center space-y-3">
+              <p className="font-display text-lg text-ink-900 dark:text-paper-100">
+                A estante ainda está vazia
+              </p>
+              <p className="font-reading text-sm text-ink-600 dark:text-paper-300 max-w-md mx-auto">
+                {isCurrentUser
+                  ? "Ao ingressar ou criar uma mesa de leitura no painel, suas obras em andamento e marcos concluídos aparecerão aqui."
+                  : "Este leitor ainda não participa de nenhuma mesa de leitura ativa."}
+              </p>
+              {isCurrentUser && (
+                <Link href="/dashboard" className="inline-block pt-1">
+                  <Button size="sm" variant="secondary">
+                    Explorar Mesas de Leitura
+                  </Button>
+                </Link>
+              )}
+            </div>
+          )}
         </section>
       </main>
 
@@ -174,12 +162,14 @@ export function ProfileView({
         onClose={() => setIsEditModalOpen(false)}
         initialDisplayName={profile.display_name}
         initialBio={profile.bio || ""}
+        initialAvatarUrl={profile.avatar_url || ""}
         initialGenres={profile.favorite_genres || []}
         onProfileUpdated={(updated) => {
           setProfile((prev) => ({
             ...prev,
             display_name: updated.displayName,
             bio: updated.bio,
+            avatar_url: updated.avatarUrl !== undefined ? updated.avatarUrl : prev.avatar_url,
             favorite_genres: updated.favoriteGenres,
           }));
         }}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Textarea } from "@/components/ui/Input";
 import { GenrePicker } from "./GenrePicker";
 import { updateProfile } from "@/app/actions/profile";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { CheckCircle2 } from "lucide-react";
 
 export interface EditProfileModalProps {
@@ -13,10 +14,12 @@ export interface EditProfileModalProps {
   onClose: () => void;
   initialDisplayName?: string;
   initialBio?: string;
+  initialAvatarUrl?: string;
   initialGenres?: string[];
   onProfileUpdated?: (data: {
     displayName: string;
     bio: string;
+    avatarUrl?: string;
     favoriteGenres: string[];
   }) => void;
 }
@@ -26,11 +29,13 @@ export function EditProfileModal({
   onClose,
   initialDisplayName = "",
   initialBio = "",
+  initialAvatarUrl = "",
   initialGenres = [],
   onProfileUpdated,
 }: EditProfileModalProps) {
   const [displayName, setDisplayName] = React.useState(initialDisplayName);
   const [bio, setBio] = React.useState(initialBio);
+  const [avatarUrl, setAvatarUrl] = React.useState(initialAvatarUrl);
   const [genres, setGenres] = React.useState<string[]>(initialGenres);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -38,8 +43,9 @@ export function EditProfileModal({
   React.useEffect(() => {
     setDisplayName(initialDisplayName);
     setBio(initialBio);
+    setAvatarUrl(initialAvatarUrl);
     setGenres(initialGenres);
-  }, [initialDisplayName, initialBio, initialGenres]);
+  }, [initialDisplayName, initialBio, initialAvatarUrl, initialGenres]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,12 +60,14 @@ export function EditProfileModal({
       await updateProfile({
         displayName: displayName.trim(),
         bio: bio.trim(),
+        avatarUrl: avatarUrl || undefined,
         favoriteGenres: genres,
       });
 
       onProfileUpdated?.({
         displayName: displayName.trim(),
         bio: bio.trim(),
+        avatarUrl,
         favoriteGenres: genres,
       });
       onClose();
@@ -83,6 +91,15 @@ export function EditProfileModal({
             {error}
           </div>
         )}
+
+        <ImageUpload
+          bucket="avatars"
+          value={avatarUrl}
+          onChange={setAvatarUrl}
+          aspectRatio="avatar"
+          label="Foto de Perfil"
+          hint="Imagem circular visível nas mesas e anotações de margem"
+        />
 
         <Input
           id="profile-name"

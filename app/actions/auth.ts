@@ -84,15 +84,29 @@ export async function signOut() {
   redirect("/login");
 }
 
+import { headers } from "next/headers";
+
 /**
- * Inicia o fluxo de autenticação com o Google OAuth 2.0
+ * Inicia o fluxo de autenticação com o Google OAuth 2.0 com resolução dinâmica de domínio
  */
 export async function signInWithGoogle() {
+  const headerList = await headers();
+  const host = headerList.get("x-forwarded-host") || headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") || (process.env.NODE_ENV === "development" ? "http" : "https");
+  
+  const siteUrlEnv = process.env.NEXT_PUBLIC_SITE_URL;
+  const isSiteUrlLocal = siteUrlEnv?.includes("localhost");
+  const baseOrigin = (siteUrlEnv && !isSiteUrlLocal)
+    ? siteUrlEnv.replace(/\/$/, "")
+    : host
+      ? `${proto}://${host}`
+      : "http://localhost:3000";
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/callback`,
+      redirectTo: `${baseOrigin}/callback`,
     },
   });
 

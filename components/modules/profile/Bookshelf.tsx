@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { BookOpen, CheckCircle2, Clock } from "lucide-react";
 
@@ -82,18 +83,15 @@ export function Bookshelf({ books }: BookshelfProps) {
                 ? Math.round((book.current_page / book.total_pages) * 100)
                 : 0;
 
-            return (
-              <div
-                key={book.id}
-                className="group rounded-md border border-line bg-paper-100 dark:bg-ink-surface dark:border-ink-line p-3 flex flex-col justify-between space-y-2 hover:shadow-editorial transition"
-              >
+            const cardContent = (
+              <div className="group rounded-md border border-line bg-paper-100 dark:bg-ink-surface dark:border-ink-line p-3 flex flex-col justify-between space-y-2 hover:shadow-editorial hover:border-brand-500/50 transition h-full">
                 {/* Capa */}
                 <div className="w-full aspect-[2/3] rounded bg-paper-300 dark:bg-ink-surface-2 border border-line dark:border-ink-line flex items-center justify-center p-2 text-center text-xs font-display text-ink-700 dark:text-paper-200 shadow-sm overflow-hidden">
                   {book.cover_url ? (
                     <img
                       src={book.cover_url}
                       alt={book.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <span>{book.title}</span>
@@ -101,7 +99,7 @@ export function Bookshelf({ books }: BookshelfProps) {
                 </div>
 
                 <div>
-                  <h4 className="font-display text-sm font-semibold text-ink-900 dark:text-paper-50 truncate">
+                  <h4 className="font-display text-sm font-semibold text-ink-900 dark:text-paper-50 truncate group-hover:text-brand-700 dark:group-hover:text-brand-300 transition-colors">
                     {book.title}
                   </h4>
                   <p className="font-reading text-xs italic text-ink-700 dark:text-paper-200 truncate">
@@ -109,21 +107,31 @@ export function Bookshelf({ books }: BookshelfProps) {
                   </p>
                 </div>
 
-                {book.status === "reading" && book.total_pages && (
+                {book.current_page !== undefined && (
                   <div className="space-y-1 pt-1 border-t border-line/40">
-                    <div className="flex justify-between text-[11px] text-ink-500 dark:text-paper-200/60">
+                    <div className="flex justify-between text-[11px] text-ink-500 dark:text-paper-200/60 font-sans">
                       <span>Pág. {book.current_page}</span>
-                      <span>{progress}%</span>
+                      {book.total_pages && <span>{progress}%</span>}
                     </div>
-                    <div className="w-full h-1 bg-paper-300 dark:bg-ink-surface-2 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand-700 dark:bg-brand-500 rounded-full"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
+                    {book.total_pages && (
+                      <div className="w-full h-1 bg-paper-300 dark:bg-ink-surface-2 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-brand-700 dark:bg-brand-500 rounded-full"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+            );
+
+            return book.mesa_id ? (
+              <Link key={book.id} href={`/mesa/${book.mesa_id}`} className="block">
+                {cardContent}
+              </Link>
+            ) : (
+              <div key={book.id}>{cardContent}</div>
             );
           })}
         </div>
