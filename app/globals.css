@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-paper-50: #F3EDDF;
+  --color-paper-100: #F6F0E3;
+  --color-paper-200: #EEE6D7;
+  --color-paper-300: #E2D7C5;
+  --color-ink-900: #1F1C19;
+  --color-ink-700: #4B4640;
+  --color-ink-500: #777069;
+  --color-line: #CFC4B4;
+  --color-brand-700: #7C303B;
+  --color-brand-500: #A64A54;
+  --color-brand-300: #D18A90;
+  
+  --color-success: #B8D86A;
+  --color-warning: #F4D35E;
+  --color-error: #E9827D;
+  --color-info: #7DBBDA;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+
+  --bg-primary: #F6F0E3;
+  --bg-surface: #EEE6D7;
+  --bg-elevated: #E2D7C5;
+  --text-primary: #1F1C19;
+  --text-secondary: #4B4640;
+  --text-muted: #777069;
+  --border-color: #CFC4B4;
+  --action-primary: #7C303B;
+  --action-hover: #A64A54;
+}
+
+.dark,
+[data-theme="dark"] {
+  --color-paper-50: #F3EDDF;
+  --color-paper-200: #D7D0C4;
+  --color-ink-bg: #20282B;
+  --color-ink-surface: #293235;
+  --color-ink-surface-2: #323B3E;
+  --color-ink-line: #475155;
+  --color-brand-300: #D18A90;
+  --color-brand-500: #B65A64;
+
+  --bg-primary: #20282B;
+  --bg-surface: #293235;
+  --bg-elevated: #323B3E;
+  --text-primary: #F3EDDF;
+  --text-secondary: #D7D0C4;
+  --text-muted: #A39B90;
+  --border-color: #475155;
+  --action-primary: #B65A64;
+  --action-hover: #D18A90;
+}
+
+@layer base {
+  * {
+    border-color: var(--border-color);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-ui), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* Seleção com aspecto de marca-texto sutil */
+  ::selection {
+    background-color: rgba(244, 211, 94, 0.45);
+    color: inherit;
+  }
+
+  /* Foco acessível conforme guia visual */
+  :focus-visible {
+    outline: 2px solid #A64A54;
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Largura otimizada para leitura confortável (~55 a 75 caracteres) */
+  .reading-column {
+    max-width: 68ch;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* Estilos de marca-texto para passagens selecionadas e anotações */
+  .highlighter-warning {
+    background-color: rgba(244, 211, 94, 0.35);
+    padding: 0.1em 0.25em;
+    border-radius: 2px;
+  }
+
+  .highlighter-success {
+    background-color: rgba(184, 216, 106, 0.35);
+    padding: 0.1em 0.25em;
+    border-radius: 2px;
+  }
+
+  .highlighter-info {
+    background-color: rgba(125, 187, 218, 0.35);
+    padding: 0.1em 0.25em;
+    border-radius: 2px;
+  }
+
+  .highlighter-error {
+    background-color: rgba(233, 130, 125, 0.35);
+    padding: 0.1em 0.25em;
+    border-radius: 2px;
+  }
+
+  /* Linhas e divisores editoriais sutis */
+  .editorial-divider {
+    border-top: 1px solid var(--border-color);
+  }
+
+  /* Efeito de blur para proteção anti-spoiler */
+  .spoiler-blur {
+    filter: blur(5px);
+    user-select: none;
+    transition: filter 0.2s ease-in-out;
+  }
+
+  .spoiler-blur:hover {
+    filter: blur(2px);
+  }
+
+  .spoiler-revealed {
+    filter: none;
+    user-select: text;
+  }
+}

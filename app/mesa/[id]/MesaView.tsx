@@ -1,0 +1,395 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { ArrowLeft, Users, ShieldAlert, Sparkles, BookOpen, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import {
+  ReadingProgressBar,
+  MesaMembers,
+  MilestoneTimeline,
+  type MesaMemberData,
+  type MilestoneItem,
+} from "@/components/modules/mesa";
+import {
+  CommentsList,
+  type CommentData,
+} from "@/components/modules/comments";
+import {
+  updateReadingProgress,
+  joinMesa,
+} from "@/app/actions/mesa";
+import {
+  addComment,
+  toggleReaction,
+} from "@/app/actions/comments";
+import { useMesaRealtime } from "@/lib/hooks/useMesaRealtime";
+import type { ReactionType } from "@/types/database";
+
+export interface MesaViewProps {
+  id: string;
+  initialMesa?: {
+    title: string;
+    book_title: string;
+    book_author: string;
+    book_cover_url?: string | null;
+  };
+  initialMembers?: MesaMemberData[];
+  initialMilestones?: MilestoneItem[];
+  initialComments?: CommentData[];
+  initialUserProgress?: {
+    current_page: number;
+    current_chapter: number;
+  } | null;
+  isMember?: boolean;
+}
+
+export function MesaView({
+  id,
+  initialMesa = {
+    title: "Leitura Coletiva",
+    book_title: "A Hora da Estrela",
+    book_author: "Clarice Lispector",
+    book_cover_url: null,
+  },
+  initialMembers = [
+    {
+      id: "1",
+      username: "clarice_fan",
+      display_name: "Mariana Santos",
+      role: "admin",
+      joined_at: "2026-09-10T10:00:00Z",
+      current_page: 42,
+      current_chapter: 1,
+    },
+    {
+      id: "2",
+      username: "lucas_leitor",
+      display_name: "Lucas Lima",
+      role: "member",
+      joined_at: "2026-09-12T14:30:00Z",
+      current_page: 58,
+      current_chapter: 2,
+    },
+    {
+      id: "3",
+      username: "beatriz_livros",
+      display_name: "Beatriz Nogueira",
+      role: "member",
+      joined_at: "2026-09-14T09:15:00Z",
+      current_page: 35,
+      current_chapter: 1,
+    },
+  ],
+  initialMilestones = [
+    {
+      id: "m1",
+      title: "Semana 1 · Início de Macabéa",
+      target_chapter: 1,
+      target_page: 40,
+      due_date: "2026-09-15T23:59:59Z",
+      isCompleted: true,
+    },
+    {
+      id: "m2",
+      title: "Semana 2 · O Encontro com Olímpico",
+      target_chapter: 2,
+      target_page: 75,
+      due_date: "2026-09-25T23:59:59Z",
+      isCurrent: true,
+    },
+    {
+      id: "m3",
+      title: "Semana 3 · A Consulta com a Cartomante e Fim",
+      target_chapter: 3,
+      target_page: 110,
+      due_date: "2026-10-02T23:59:59Z",
+    },
+  ],
+  initialComments = [
+    {
+      id: "c1",
+      user_id: "1",
+      author_name: "Mariana Santos",
+      author_username: "clarice_fan",
+      chapter_ref: 1,
+      page_ref: 18,
+      content:
+        "“A datilógrafa vivia numa espécie de névoa...” A maneira como o narrador Rodrigo S.M. interrompe a própria história para falar de si mesmo estabelece um pacto reflexivo raro com o leitor.",
+      has_spoiler: false,
+      created_at: "2026-09-15T18:20:00Z",
+      reactions: [
+        { type: "INSIGHT", count: 4, userReacted: true },
+        { type: "LIKE", count: 2, userReacted: false },
+        { type: "AGREE", count: 3, userReacted: false },
+      ],
+    },
+    {
+      id: "c2",
+      user_id: "2",
+      author_name: "Lucas Lima",
+      author_username: "lucas_leitor",
+      chapter_ref: 2,
+      page_ref: 58,
+      content:
+        "O diálogo entre Macabéa e Olímpico de Jesus no banco da praça é uma das coisas mais dilacerantes da literatura brasileira. Cada pergunta sem resposta mútua expõe o abismo da incomunicabilidade.",
+      has_spoiler: false,
+      created_at: "2026-09-20T21:40:00Z",
+      reactions: [
+        { type: "MIND_BLOWN", count: 2, userReacted: false },
+        { type: "LOVE", count: 3, userReacted: false },
+      ],
+    },
+  ],
+  initialUserProgress = {
+    current_page: 42,
+    current_chapter: 1,
+  },
+  isMember = true,
+}: MesaViewProps) {
+  const [userProgress, setUserProgress] = React.useState(
+    initialUserProgress || { current_page: 0, current_chapter: 0 }
+  );
+  const [members, setMembers] = React.useState<MesaMemberData[]>(initialMembers);
+  const [milestones, setMilestones] = React.useState<MilestoneItem[]>(initialMilestones);
+  const [comments, setComments] = React.useState<CommentData[]>(initialComments);
+  const [isGroupMember, setIsGroupMember] = React.useState(isMember);
+  const [isJoining, setIsJoining] = React.useState(false);
+
+  // Inscrição em tempo real no Supabase Realtime
+  useMesaRealtime({
+    groupId: id,
+    onCommentChange: () => {},
+    onReactionChange: () => {},
+    onProgressChange: () => {},
+  });
+
+  const handleJoinMesa = async () => {
+    try {
+      setIsJoining(true);
+      await joinMesa(id);
+      setIsGroupMember(true);
+      setMembers((prev) => [
+        ...prev,
+        {
+          id: "current_user",
+          username: "voce",
+          display_name: "Você",
+          role: "member",
+          joined_at: new Date().toISOString(),
+          current_page: 0,
+          current_chapter: 0,
+        },
+      ]);
+    } catch {
+      // Fallback otimista durante desenvolvimento
+      setIsGroupMember(true);
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleUpdateProgress = async (page: number, chapter: number) => {
+    setUserProgress({ current_page: page, current_chapter: chapter });
+
+    try {
+      await updateReadingProgress(id, page, chapter);
+    } catch {
+      // Fallback em desenvolvimento
+    }
+  };
+
+  const handleAddComment = async (data: {
+    content: string;
+    chapter_ref?: number;
+    page_ref?: number;
+    has_spoiler: boolean;
+  }) => {
+    const optimisticComment: CommentData = {
+      id: `c_${Date.now()}`,
+      user_id: "current_user",
+      author_name: "Você",
+      author_username: "leitor",
+      chapter_ref: data.chapter_ref || userProgress.current_chapter,
+      page_ref: data.page_ref || userProgress.current_page,
+      content: data.content,
+      has_spoiler: data.has_spoiler,
+      created_at: new Date().toISOString(),
+      reactions: [],
+    };
+
+    setComments((prev) => [optimisticComment, ...prev]);
+
+    try {
+      await addComment({
+        groupId: id,
+        content: data.content,
+        chapterRef: data.chapter_ref,
+        pageRef: data.page_ref,
+        hasSpoiler: data.has_spoiler,
+      });
+    } catch {
+      // Fallback gracioso
+    }
+  };
+
+  const handleToggleReaction = async (commentId: string, type: ReactionType) => {
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment.id !== commentId) return comment;
+
+        const reactions = [...(comment.reactions || [])];
+        const existingIndex = reactions.findIndex((r) => r.type === type);
+
+        if (existingIndex >= 0) {
+          const current = reactions[existingIndex];
+          if (current.userReacted) {
+            reactions[existingIndex] = {
+              ...current,
+              count: Math.max(0, current.count - 1),
+              userReacted: false,
+            };
+          } else {
+            reactions[existingIndex] = {
+              ...current,
+              count: current.count + 1,
+              userReacted: true,
+            };
+          }
+        } else {
+          reactions.push({
+            type,
+            count: 1,
+            userReacted: true,
+          });
+        }
+
+        return { ...comment, reactions };
+      })
+    );
+
+    try {
+      await toggleReaction(id, commentId, type);
+    } catch {
+      // Fallback gracioso
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-paper-100 dark:bg-ink-bg flex flex-col">
+      {/* Topo da Mesa */}
+      <header className="border-b border-line dark:border-ink-line bg-paper-100/90 dark:bg-ink-bg/90 backdrop-blur sticky top-0 z-10 px-6 py-3">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink-700 hover:text-ink-900 dark:text-paper-200 dark:hover:text-paper-50 transition min-h-[36px]"
+          >
+            <ArrowLeft className="w-4 h-4" /> Voltar ao Painel
+          </Link>
+          <div className="flex items-center gap-3">
+            {!isGroupMember ? (
+              <Button
+                size="sm"
+                onClick={handleJoinMesa}
+                isLoading={isJoining}
+                leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+              >
+                Ingressar na Mesa
+              </Button>
+            ) : (
+              <Badge variant="brand" className="text-[11px]">
+                Mesa Síncrona
+              </Badge>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Conteúdo Principal */}
+      <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-10 space-y-8">
+        {/* Banner para Visitantes */}
+        {!isGroupMember && (
+          <div className="p-4 rounded-lg bg-paper-200/60 dark:bg-ink-surface border border-line dark:border-ink-line flex flex-col sm:flex-row justify-between items-center gap-3">
+            <p className="font-reading text-body text-ink-700 dark:text-paper-200">
+              Você está visitando esta mesa pública. Ingresse para sincronizar seu ritmo e publicar anotações na margem.
+            </p>
+            <Button
+              size="sm"
+              onClick={handleJoinMesa}
+              isLoading={isJoining}
+              leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+            >
+              Participar da Leitura
+            </Button>
+          </div>
+        )}
+
+        {/* Cabeçalho Editorial do Livro */}
+        <div className="flex flex-col md:flex-row gap-6 items-start pb-8 border-b border-line dark:border-ink-line">
+          <div className="w-32 h-44 rounded bg-paper-300 dark:bg-ink-surface-2 border border-line dark:border-ink-line flex-shrink-0 flex items-center justify-center text-center p-3 font-display text-base text-ink-700 dark:text-paper-200 shadow-editorial overflow-hidden">
+            {initialMesa.book_cover_url ? (
+              <img
+                src={initialMesa.book_cover_url}
+                alt={initialMesa.book_title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{initialMesa.book_title}</span>
+            )}
+          </div>
+
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-widest text-brand-700 dark:text-brand-300 font-semibold px-2 py-0.5 rounded bg-paper-200 dark:bg-ink-surface border border-line dark:border-ink-line">
+                {initialMesa.title}
+              </span>
+              <span className="text-xs text-ink-500 dark:text-paper-200/60 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5" /> {members.length} leitores
+              </span>
+            </div>
+
+            <h1 className="font-display text-h1 text-ink-900 dark:text-paper-50 leading-tight">
+              {initialMesa.book_title}
+            </h1>
+            <p className="font-reading text-body-lg text-ink-700 dark:text-paper-200 italic">
+              {initialMesa.book_author}
+            </p>
+            <p className="font-reading text-body text-ink-700 dark:text-paper-200 max-w-2xl leading-relaxed">
+              Mesa de leitura compartilhada. Notas da margem, marcos semanais e reações sincronizadas entre leitores.
+            </p>
+          </div>
+        </div>
+
+        {/* Barra de Progresso do Leitor Conectada */}
+        <ReadingProgressBar
+          currentPage={userProgress.current_page}
+          currentChapter={userProgress.current_chapter}
+          totalPages={110}
+          targetPage={75}
+          onUpdateProgress={handleUpdateProgress}
+          canEdit={isGroupMember}
+        />
+
+        {/* Grid de 2 Colunas: Notas na Margem (Principal) e Lateral (Membros + Cronograma) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Coluna da Esquerda: Discussão e Notas de Margem com Anti-Spoiler */}
+          <div className="lg:col-span-2 space-y-6">
+            <CommentsList
+              comments={comments}
+              currentUserProgress={userProgress}
+              onAddComment={handleAddComment}
+              onToggleReaction={handleToggleReaction}
+            />
+          </div>
+
+          {/* Coluna da Direita: Membros da Mesa e Cronograma de Metas */}
+          <div className="space-y-6">
+            <MesaMembers members={members} />
+            <MilestoneTimeline milestones={milestones} />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
