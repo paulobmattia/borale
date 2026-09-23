@@ -21,6 +21,8 @@ import {
 import {
   updateReadingProgress,
   joinMesa,
+  createMilestone,
+  deleteMilestone,
 } from "@/app/actions/mesa";
 import {
   addComment,
@@ -52,106 +54,17 @@ export interface MesaViewProps {
 export function MesaView({
   id,
   initialMesa = {
-    title: "Leitura Coletiva",
-    book_title: "A Hora da Estrela",
-    book_author: "Clarice Lispector",
+    title: "Mesa de Leitura",
+    book_title: "Livro em Leitura",
+    book_author: "Autor",
     book_cover_url: null,
     is_private: false,
   },
-  initialMembers = [
-    {
-      id: "1",
-      username: "clarice_fan",
-      display_name: "Mariana Santos",
-      role: "admin",
-      joined_at: "2026-09-10T10:00:00Z",
-      current_page: 42,
-      current_chapter: 1,
-    },
-    {
-      id: "2",
-      username: "lucas_leitor",
-      display_name: "Lucas Lima",
-      role: "member",
-      joined_at: "2026-09-12T14:30:00Z",
-      current_page: 58,
-      current_chapter: 2,
-    },
-    {
-      id: "3",
-      username: "beatriz_livros",
-      display_name: "Beatriz Nogueira",
-      role: "member",
-      joined_at: "2026-09-14T09:15:00Z",
-      current_page: 35,
-      current_chapter: 1,
-    },
-  ],
-  initialMilestones = [
-    {
-      id: "m1",
-      title: "Semana 1 · Início de Macabéa",
-      target_chapter: 1,
-      target_page: 40,
-      due_date: "2026-09-15T23:59:59Z",
-      isCompleted: true,
-    },
-    {
-      id: "m2",
-      title: "Semana 2 · O Encontro com Olímpico",
-      target_chapter: 2,
-      target_page: 75,
-      due_date: "2026-09-25T23:59:59Z",
-      isCurrent: true,
-    },
-    {
-      id: "m3",
-      title: "Semana 3 · A Consulta com a Cartomante e Fim",
-      target_chapter: 3,
-      target_page: 110,
-      due_date: "2026-10-02T23:59:59Z",
-    },
-  ],
-  initialComments = [
-    {
-      id: "c1",
-      user_id: "1",
-      author_name: "Mariana Santos",
-      author_username: "clarice_fan",
-      chapter_ref: 1,
-      page_ref: 18,
-      content:
-        "“A datilógrafa vivia numa espécie de névoa...” A maneira como o narrador Rodrigo S.M. interrompe a própria história para falar de si mesmo estabelece um pacto reflexivo raro com o leitor.",
-      has_spoiler: false,
-      created_at: "2026-09-15T18:20:00Z",
-      reactions: [
-        { type: "INSIGHT", count: 4, userReacted: true },
-        { type: "LIKE", count: 2, userReacted: false },
-        { type: "AGREE", count: 3, userReacted: false },
-      ],
-    },
-    {
-      id: "c2",
-      user_id: "2",
-      author_name: "Lucas Lima",
-      author_username: "lucas_leitor",
-      chapter_ref: 2,
-      page_ref: 58,
-      content:
-        "O diálogo entre Macabéa e Olímpico de Jesus no banco da praça é uma das coisas mais dilacerantes da literatura brasileira. Cada pergunta sem resposta mútua expõe o abismo da incomunicabilidade.",
-      has_spoiler: false,
-      created_at: "2026-09-20T21:40:00Z",
-      reactions: [
-        { type: "MIND_BLOWN", count: 2, userReacted: false },
-        { type: "LOVE", count: 3, userReacted: false },
-      ],
-    },
-  ],
-  initialUserProgress = {
-    current_page: 42,
-    current_chapter: 1,
-  },
-  isMember = true,
+  initialMembers = [],
+  initialMilestones = [],
+  initialComments = [],
+  initialUserProgress = null,
+  isMember = false,
   canEdit = false,
 }: MesaViewProps) {
   const [mesa, setMesa] = React.useState(initialMesa);
@@ -170,6 +83,28 @@ export function MesaView({
   const [isGroupMember, setIsGroupMember] = React.useState(isMember);
   const [isJoining, setIsJoining] = React.useState(false);
 
+  React.useEffect(() => {
+    setMembers(initialMembers);
+  }, [initialMembers]);
+
+  React.useEffect(() => {
+    setMilestones(initialMilestones);
+  }, [initialMilestones]);
+
+  React.useEffect(() => {
+    setComments(initialComments);
+  }, [initialComments]);
+
+  React.useEffect(() => {
+    if (initialUserProgress) {
+      setUserProgress(initialUserProgress);
+    }
+  }, [initialUserProgress]);
+
+  React.useEffect(() => {
+    setIsGroupMember(isMember);
+  }, [isMember]);
+
   // Inscrição em tempo real no Supabase Realtime
   useMesaRealtime({
     groupId: id,
@@ -177,6 +112,47 @@ export function MesaView({
     onReactionChange: () => {},
     onProgressChange: () => {},
   });
+
+  // Calcula o status dinâmico de cada marco (concluído ou em curso) de acordo com o ritmo do leitor
+  const computedMilestones = React.useMemo(() => {
+    let foundCurrent = false;
+    return milestones.map((m) => {
+      let isCompleted = false;
+      if (m.target_page && userProgress.current_page >= m.target_page) {
+        isCompleted = true;
+      } else if (m.target_chapter && userProgress.current_chapter >= m.target_chapter) {
+        isCompleted = true;
+      }
+
+      let isCurrent = false;
+      if (!isCompleted && !foundCurrent) {
+        isCurrent = true;
+        foundCurrent = true;
+      }
+
+      return {
+        ...m,
+        isCompleted,
+        isCurrent,
+      };
+    });
+  }, [milestones, userProgress]);
+
+  // Calcula o total de páginas a partir do maior marco cadastrado (ou undefined)
+  const totalPages = React.useMemo(() => {
+    const pages = milestones
+      .map((m) => m.target_page)
+      .filter((p): p is number => typeof p === "number" && p > 0);
+    return pages.length > 0 ? Math.max(...pages) : undefined;
+  }, [milestones]);
+
+  // Encontra a próxima meta a ser batida
+  const currentMilestone = React.useMemo(() => {
+    return computedMilestones.find((m) => m.isCurrent);
+  }, [computedMilestones]);
+
+  const targetPage = currentMilestone?.target_page || undefined;
+  const targetChapter = currentMilestone?.target_chapter || undefined;
 
   const handleJoinMesa = async () => {
     try {
@@ -196,7 +172,6 @@ export function MesaView({
         },
       ]);
     } catch {
-      // Fallback otimista durante desenvolvimento
       setIsGroupMember(true);
     } finally {
       setIsJoining(false);
@@ -210,6 +185,49 @@ export function MesaView({
       await updateReadingProgress(id, page, chapter);
     } catch {
       // Fallback em desenvolvimento
+    }
+  };
+
+  const handleAddMilestone = async (data: {
+    title: string;
+    target_chapter?: number;
+    target_page?: number;
+    due_date: string;
+  }) => {
+    const optimisticMilestone: MilestoneItem = {
+      id: `ms_${Date.now()}`,
+      title: data.title,
+      target_chapter: data.target_chapter || null,
+      target_page: data.target_page || null,
+      due_date: data.due_date,
+    };
+
+    setMilestones((prev) => [...prev, optimisticMilestone]);
+
+    try {
+      const created = await createMilestone({
+        groupId: id,
+        title: data.title,
+        target_chapter: data.target_chapter,
+        target_page: data.target_page,
+        due_date: data.due_date,
+      });
+      if (created) {
+        setMilestones((prev) =>
+          prev.map((m) => (m.id === optimisticMilestone.id ? created : m))
+        );
+      }
+    } catch (err) {
+      console.error("Erro ao criar marco:", err);
+    }
+  };
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    setMilestones((prev) => prev.filter((m) => m.id !== milestoneId));
+    try {
+      await deleteMilestone(id, milestoneId);
+    } catch (err) {
+      console.error("Erro ao excluir marco:", err);
     }
   };
 
@@ -439,7 +457,7 @@ export function MesaView({
                 {mesa.title}
               </span>
               <span className="text-xs text-ink-500 dark:text-paper-200/60 flex items-center gap-1">
-                <Users className="w-3.5 h-3.5" /> {members.length} leitores
+                <Users className="w-3.5 h-3.5" /> {members.length} {members.length === 1 ? "leitor" : "leitores"}
               </span>
               {canEdit && (
                 <button
@@ -459,7 +477,7 @@ export function MesaView({
               {mesa.book_author}
             </p>
             <p className="font-reading text-body text-ink-700 dark:text-paper-200 max-w-2xl leading-relaxed">
-              Mesa de leitura compartilhada. Notas da margem, marcos semanais e reações sincronizadas entre leitores.
+              Mesa de leitura compartilhada. Notas da margem, marcos com prazos e reações sincronizadas entre leitores.
             </p>
           </div>
         </div>
@@ -468,8 +486,9 @@ export function MesaView({
         <ReadingProgressBar
           currentPage={userProgress.current_page}
           currentChapter={userProgress.current_chapter}
-          totalPages={110}
-          targetPage={75}
+          totalPages={totalPages}
+          targetPage={targetPage}
+          targetChapter={targetChapter}
           onUpdateProgress={handleUpdateProgress}
           canEdit={isGroupMember}
         />
@@ -490,7 +509,12 @@ export function MesaView({
           {/* Coluna da Direita: Membros da Mesa e Cronograma de Metas */}
           <div className="space-y-6">
             <MesaMembers members={members} />
-            <MilestoneTimeline milestones={milestones} />
+            <MilestoneTimeline
+              milestones={computedMilestones}
+              canEdit={canEdit}
+              onAddMilestone={handleAddMilestone}
+              onDeleteMilestone={handleDeleteMilestone}
+            />
           </div>
         </div>
       </main>

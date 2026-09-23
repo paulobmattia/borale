@@ -2,7 +2,7 @@ import * as React from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
-import { Crown, BookOpen } from "lucide-react";
+import { Crown, BookOpen, Users } from "lucide-react";
 
 export interface MesaMemberData {
   id: string;
@@ -20,6 +20,21 @@ export interface MesaMembersProps {
 }
 
 export function MesaMembers({ members }: MesaMembersProps) {
+  if (members.length === 0) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-700 dark:text-paper-200">
+          Leitores na Mesa (0)
+        </h3>
+        <div className="p-4 rounded-lg border border-line bg-paper-100 dark:bg-ink-surface text-center">
+          <p className="text-xs text-ink-500 font-sans">
+            Nenhum leitor nesta mesa ainda.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center">

@@ -53,9 +53,30 @@ export async function createMesa(input: CreateMesaInput) {
     .select("id")
     .single();
 
-  if (error) {
-    throw new Error(`Erro ao criar mesa: ${error.message}`);
+  if (error || !data) {
+    throw new Error(`Erro ao criar mesa: ${error?.message || "Erro desconhecido"}`);
   }
+
+  // 1. Vincula o criador explicitamente como Admin da mesa
+  await supabase.from("group_members").upsert(
+    {
+      group_id: data.id,
+      user_id: user.id,
+      role: "admin",
+    },
+    { onConflict: "group_id,user_id" }
+  );
+
+  // 2. Inicializa o progresso de leitura do criador
+  await supabase.from("user_progress").upsert(
+    {
+      group_id: data.id,
+      user_id: user.id,
+      current_page: 0,
+      current_chapter: 0,
+    },
+    { onConflict: "group_id,user_id" }
+  );
 
   revalidatePath("/dashboard");
   return data;
@@ -169,6 +190,27 @@ export async function getMesaDetails(groupId: string) {
 
   if (mesaError || !mesa) {
     return null;
+  }
+
+  // Auto-reparo defensivo: Assegura que o criador conste como admin em group_members e user_progress
+  if (user && mesa.created_by === user.id) {
+    await supabase.from("group_members").upsert(
+      {
+        group_id: groupId,
+        user_id: user.id,
+        role: "admin",
+      },
+      { onConflict: "group_id,user_id" }
+    );
+    await supabase.from("user_progress").upsert(
+      {
+        group_id: groupId,
+        user_id: user.id,
+        current_page: 0,
+        current_chapter: 0,
+      },
+      { onConflict: "group_id,user_id", ignoreDuplicates: true }
+    );
   }
 
   // 2. Busca membros e seus perfis com progresso
@@ -431,3 +473,136 @@ export async function updateMesa(
   revalidatePath(`/mesa/${groupId}`);
   revalidatePath("/dashboard");
 }
+
+export interface CreateMilestoneInput {
+  groupId: string;
+  title?: string;
+  target_chapter?: number;
+  target_page?: number;
+  due_date: string;
+}
+
+/**
+ * Cria um novo marco/meta no cronograma da mesa (apenas criador ou admin)
+ */
+export async function createMilestone(input: CreateMilestoneInput) {
+  if (!input.groupId) {
+    throw new Error("ID da mesa inválido.");
+  }
+
+  if (!input.due_date) {
+    throw new Error("O prazo do marco é obrigatório.");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Você precisa estar autenticado para adicionar marcos.");
+  }
+
+  // Verifica permissão (criador ou admin)
+  const { data: mesa } = await supabase
+    .from("reading_groups")
+    .select("created_by")
+    .eq("id", input.groupId)
+    .single();
+
+  const { data: memberRole } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", input.groupId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const isCreator = mesa?.created_by === user.id;
+  const isAdmin = memberRole?.role === "admin";
+
+  if (!isCreator && !isAdmin) {
+    throw new Error("Apenas o criador ou administrador pode gerenciar os marcos da mesa.");
+  }
+
+  const title = input.title?.trim() || null;
+  const targetChapter =
+    input.target_chapter != null && !isNaN(input.target_chapter) && input.target_chapter >= 0
+      ? Math.floor(input.target_chapter)
+      : null;
+  const targetPage =
+    input.target_page != null && !isNaN(input.target_page) && input.target_page >= 0
+      ? Math.floor(input.target_page)
+      : null;
+
+  const { data, error } = await supabase
+    .from("milestones")
+    .insert({
+      group_id: input.groupId,
+      title,
+      target_chapter: targetChapter,
+      target_page: targetPage,
+      due_date: new Date(input.due_date).toISOString(),
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao criar marco: ${error.message}`);
+  }
+
+  revalidatePath(`/mesa/${input.groupId}`);
+  revalidatePath("/dashboard");
+  return data;
+}
+
+/**
+ * Exclui um marco do cronograma da mesa (apenas criador ou admin)
+ */
+export async function deleteMilestone(groupId: string, milestoneId: string) {
+  if (!groupId || !milestoneId) {
+    throw new Error("Identificadores inválidos.");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Você precisa estar autenticado.");
+  }
+
+  const { data: mesa } = await supabase
+    .from("reading_groups")
+    .select("created_by")
+    .eq("id", groupId)
+    .single();
+
+  const { data: memberRole } = await supabase
+    .from("group_members")
+    .select("role")
+    .eq("group_id", groupId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const isCreator = mesa?.created_by === user.id;
+  const isAdmin = memberRole?.role === "admin";
+
+  if (!isCreator && !isAdmin) {
+    throw new Error("Apenas o criador ou administrador pode excluir marcos da mesa.");
+  }
+
+  const { error } = await supabase
+    .from("milestones")
+    .delete()
+    .eq("id", milestoneId)
+    .eq("group_id", groupId);
+
+  if (error) {
+    throw new Error(`Erro ao excluir marco: ${error.message}`);
+  }
+
+  revalidatePath(`/mesa/${groupId}`);
+  revalidatePath("/dashboard");
+}
+

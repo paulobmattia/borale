@@ -19,7 +19,7 @@ export interface ReadingProgressBarProps {
 export function ReadingProgressBar({
   currentPage,
   currentChapter,
-  totalPages = 200,
+  totalPages,
   targetPage,
   targetChapter,
   onUpdateProgress,
@@ -30,9 +30,17 @@ export function ReadingProgressBar({
   const [chapterInput, setChapterInput] = React.useState(currentChapter.toString());
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Calcula percentual baseado no total ou no alvo da meta
-  const maxRef = totalPages || 100;
-  const percentage = Math.min(100, Math.round((currentPage / maxRef) * 100));
+  React.useEffect(() => {
+    setPageInput(currentPage.toString());
+    setChapterInput(currentChapter.toString());
+  }, [currentPage, currentChapter]);
+
+  // Calcula percentual se houver referência de páginas
+  const maxRef = totalPages || targetPage;
+  const hasReference = typeof maxRef === "number" && maxRef > 0;
+  const percentage = hasReference
+    ? Math.min(100, Math.round((currentPage / maxRef) * 100))
+    : null;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,15 +71,21 @@ export function ReadingProgressBar({
           </span>
           {targetPage && (
             <span className="text-ink-500 dark:text-paper-200/70">
-              (Meta: Pág. {targetPage})
+              (Próxima meta: {targetChapter ? `Cap. ${targetChapter} · ` : ""}Pág. {targetPage})
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="font-semibold text-brand-700 dark:text-brand-300">
-            {percentage}%
-          </span>
+          {percentage !== null ? (
+            <span className="font-semibold text-brand-700 dark:text-brand-300">
+              {percentage}%
+            </span>
+          ) : (
+            <span className="text-[11px] text-ink-500 dark:text-paper-300">
+              {currentPage > 0 ? "Leitura iniciada" : "A iniciar"}
+            </span>
+          )}
           {canEdit && (
             <button
               onClick={() => setIsModalOpen(true)}
@@ -84,11 +98,11 @@ export function ReadingProgressBar({
         </div>
       </div>
 
-      {/* Barra de Progresso Fina Conforme Design System (2–4 px) */}
+      {/* Barra de Progresso */}
       <div className="w-full h-1.5 bg-paper-300 dark:bg-ink-surface-2 rounded-full overflow-hidden">
         <div
           className="h-full bg-brand-700 dark:bg-brand-500 rounded-full transition-all duration-300 ease-out"
-          style={{ width: `${percentage}%` }}
+          style={{ width: `${percentage !== null ? percentage : currentPage > 0 ? 10 : 0}%` }}
         />
       </div>
 
@@ -113,7 +127,7 @@ export function ReadingProgressBar({
               label="Página atual"
               type="number"
               min="0"
-              max={totalPages}
+              max={totalPages || undefined}
               required
               value={pageInput}
               onChange={(e) => setPageInput(e.target.value)}

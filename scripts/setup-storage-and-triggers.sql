@@ -151,3 +151,30 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
   END LOOP;
 END$$;
+
+-- 4. ADICIONAR COLUNA favorite_book NO PERFIL CASO NÃO EXISTA
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS favorite_book TEXT 
+CONSTRAINT chk_profiles_favorite_book CHECK (favorite_book IS NULL OR char_length(favorite_book) <= 200);
+
+-- 5. TRIGGER PARA AUTO-VINCULAR O CRIADOR DA MESA COMO ADMIN
+CREATE OR REPLACE FUNCTION public.handle_new_reading_group()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.group_members (group_id, user_id, role)
+  VALUES (NEW.id, NEW.created_by, 'admin')
+  ON CONFLICT (group_id, user_id) DO NOTHING;
+
+  INSERT INTO public.user_progress (group_id, user_id, current_page, current_chapter)
+  VALUES (NEW.id, NEW.created_by, 0, 0)
+  ON CONFLICT (group_id, user_id) DO NOTHING;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_reading_group_created ON public.reading_groups;
+CREATE TRIGGER on_reading_group_created
+  AFTER INSERT ON public.reading_groups
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_reading_group();
+
