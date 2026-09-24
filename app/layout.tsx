@@ -3,8 +3,9 @@ import { GFS_Didot, EB_Garamond, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const adsenseClientId =
+const rawId =
   process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-7928250617161816";
+const adsenseClientId = rawId.startsWith("ca-") ? rawId : `ca-${rawId}`;
 
 const gfsDidot = GFS_Didot({
   weight: "400",
@@ -58,16 +59,15 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${gfsDidot.variable} ${ebGaramond.variable} ${inter.variable}`}
     >
+      <head>
+        <meta name="google-adsense-account" content={adsenseClientId} />
+        <script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="min-h-screen bg-paper-100 text-ink-900 antialiased selection:bg-semantic-warning/30 selection:text-ink-900">
-        {adsenseClientId && (
-          <Script
-            id="google-adsense"
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
-        )}
         {children}
       </body>
     </html>
