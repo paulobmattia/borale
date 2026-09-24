@@ -3,7 +3,8 @@ import { GFS_Didot, EB_Garamond, Inter } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
-const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
+const adsenseClientId =
+  process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || "ca-pub-7928250617161816";
 
 const gfsDidot = GFS_Didot({
   weight: "400",
@@ -35,6 +36,9 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "Boralê",
+  },
+  other: {
+    "google-adsense-account": adsenseClientId,
   },
 };
 
